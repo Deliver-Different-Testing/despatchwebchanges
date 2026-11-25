@@ -27,6 +27,9 @@ vi.mock('../../../api/messagingApi', () => {
         addQuickResponse: vi.fn(),
         deleteQuickResponse: vi.fn(),
         getMessageContactOptions: vi.fn(),
+        getArchivedList: vi.fn(),
+        archiveConversations: vi.fn(),
+        unarchiveConversations: vi.fn(),
     };
     return {
         __esModule: true,
@@ -82,6 +85,9 @@ function setupApiDefaults(conversations: RecentConversation[] = []) {
     mockApi.sendMessage.mockResolvedValue(undefined);
     mockApi.sendMultiMessage.mockResolvedValue(undefined);
     mockApi.getMessageContactOptions.mockResolvedValue([]);
+    mockApi.getArchivedList.mockResolvedValue([]);
+    mockApi.archiveConversations.mockResolvedValue(0);
+    mockApi.unarchiveConversations.mockResolvedValue(undefined);
 }
 
 // jsdom doesn't implement scrollIntoView
@@ -462,6 +468,122 @@ describe('MessagingDialog', () => {
         await user.click(screen.getByRole('checkbox', {name: 'Unread'}));
         await waitFor(() => expect(screen.queryByText('Alice')).not.toBeInTheDocument());
         expect(screen.getByText('Bob')).toBeInTheDocument();
+    });
+
+    // ── Archive: bulk select read conversations, Undo ───────────────
+    it('archives the selected read conversations, never unread ones, and offers Undo', async () => {
+        const user = setupUser();
+        const showToast = vi.fn();
+        const alice = createConversation({otherPartyId: 1, otherPartyName: 'Alice'});
+        const bob = createConversation({otherPartyId: 2, otherPartyName: 'Bob'});
+        const carl = createConversation({otherPartyId: 3, otherPartyName: 'Carl', unreadCount: 2});
+        setupApiDefaults([carl]);
+        mockApi.getRecentList.mockResolvedValueOnce([alice, bob, carl]);
+        mockApi.archiveConversations.mockResolvedValue(2);
+        renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);
+
+        await screen.findByText('Alice');
+        await user.click(screen.getByRole('button', {name: 'Select conversations'}));
+
+        expect(screen.getByRole('checkbox', {name: /Carl has unread messages/})).toBeDisabled();
+        expect(screen.getByText(/Unread conversations can't be archived/)).toBeInTheDocument();
+
+        await user.click(screen.getByRole('checkbox', {name: 'Select conversation with Alice'}));
+        const selectAll = screen.getByRole('checkbox', {name: 'Select all'});
+        expect(selectAll).toHaveAttribute('data-indeterminate', 'true');
+        expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+        await user.click(selectAll);
+        expect(screen.getByText('2 selected')).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'Archive'}));
+
+        const archivedKeys = [
+            {otherPartyId: 1, otherPartyType: OtherMessagePartyType.Courier},
+            {otherPartyId: 2, otherPartyType: OtherMessagePartyType.Courier},
+        ];
+        await waitFor(() => expect(mockApi.archiveConversations).toHaveBeenCalledWith(archivedKeys));
+        await waitFor(() => expect(screen.queryByText('Alice')).not.toBeInTheDocument());
+        expect(screen.getByText('Carl')).toBeInTheDocument();
+        expect(showToast).toHaveBeenCalledWith('Archived 2 conversations', 'success',
+            expect.objectContaining({label: 'Undo'}));
+
+        act(() => showToast.mock.calls[0][2].onClick());
+        await waitFor(() => expect(mockApi.unarchiveConversations).toHaveBeenCalledWith(archivedKeys));
+    });
+
+    it('says how many were skipped when a conversation got a new message before archiving', async () => {
+        const user = setupUser();
+        const showToast = vi.fn();
+        setupApiDefaults([
+            createConversation({otherPartyId: 1, otherPartyName: 'Alice'}),
+            createConversation({otherPartyId: 2, otherPartyName: 'Bob'}),
+        ]);
+        mockApi.archiveConversations.mockResolvedValue(1);
+        renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);
+
+        await screen.findByText('Alice');
+        await user.click(screen.getByRole('button', {name: 'Select conversations'}));
+        await user.click(screen.getByRole('checkbox', {name: 'Select all'}));
+        await user.click(screen.getByRole('button', {name: 'Archive'}));
+
+        await waitFor(() => expect(showToast).toHaveBeenCalledWith(
+            'Archived 1 of 2: 1 has new messages', 'success', expect.objectContaining({label: 'Undo'})));
+    });
+
+    it('select all only covers the filtered rows, and changing the filter clears the selection', async () => {
+        const user = setupUser();
+        setupApiDefaults([
+            createConversation({otherPartyId: 1, otherPartyName: 'Alice'}),
+            createConversation({otherPartyId: 2, otherPartyName: 'Bob'}),
+        ]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await screen.findByText('Alice');
+        await user.click(screen.getByRole('button', {name: 'Select conversations'}));
+        await user.type(screen.getByLabelText('Filter conversations'), 'ali');
+        await user.click(screen.getByRole('checkbox', {name: 'Select all'}));
+        expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+        await user.click(screen.getByLabelText('Clear filter'));
+        expect(screen.getByText('0 selected')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Archive'})).toBeDisabled();
+    });
+
+    it('lists archived conversations and moves them back to the list', async () => {
+        const user = setupUser();
+        const showToast = vi.fn();
+        setupApiDefaults([createConversation({otherPartyId: 1, otherPartyName: 'Alice'})]);
+        mockApi.getArchivedList.mockResolvedValueOnce([
+            createConversation({otherPartyId: 7, otherPartyType: OtherMessagePartyType.Staff, otherPartyName: 'Old Pal'}),
+        ]);
+        renderWithTheme(<MessagingDialog {...defaultProps} showToast={showToast} />);
+
+        await screen.findByText('Alice');
+        await user.click(screen.getByRole('checkbox', {name: 'Archived'}));
+        expect(await screen.findByText('Old Pal')).toBeInTheDocument();
+        expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', {name: 'Unread'})).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'Select conversations'}));
+        await user.click(screen.getByRole('checkbox', {name: 'Select conversation with Old Pal'}));
+        await user.click(screen.getByRole('button', {name: 'Unarchive'}));
+
+        await waitFor(() => expect(mockApi.unarchiveConversations).toHaveBeenCalledWith(
+            [{otherPartyId: 7, otherPartyType: OtherMessagePartyType.Staff}]));
+        expect(showToast).toHaveBeenCalledWith('Moved 1 conversation back to your list', 'success');
+        expect(await screen.findByText('No archived conversations')).toBeInTheDocument();
+    });
+
+    it('opens a conversation from the keyboard', async () => {
+        const user = setupUser();
+        setupApiDefaults([createConversation({otherPartyId: 5, otherPartyName: 'Alice'})]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        const row = (await screen.findByText('Alice')).closest('li')!;
+        row.focus();
+        await user.keyboard('{Enter}');
+
+        await waitFor(() => expect(mockApi.getMessages).toHaveBeenCalledWith(5, OtherMessagePartyType.Courier, 42));
     });
 
     // ── Mark-as-read quick action from the list ─────────────────────

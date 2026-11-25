@@ -8,6 +8,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {
     ChatMessage,
+    ConversationKey,
     DEFAULT_QUICK_RESPONSES,
     MessageContactOption,
     OtherMessagePartyType,
@@ -96,6 +97,64 @@ export function useConversations(open: boolean) {
 }
 
 const EMPTY_CONVERSATIONS: RecentConversation[] = [];
+
+export const archivedConversationsQueryKey = ['messages', 'archived-conversations'] as const;
+
+/** The archived list, fetched only while it is on screen. */
+export function useArchivedConversations(enabled: boolean) {
+    const query = useQuery({
+        queryKey: archivedConversationsQueryKey,
+        queryFn: ({signal}) => messagingApi.getArchivedList({signal, timeout: CONVERSATIONS_TIMEOUT_MS}),
+        enabled,
+        staleTime: 0,
+        retry: false,
+    });
+
+    return {
+        conversations: query.data ?? EMPTY_CONVERSATIONS,
+        isLoading: query.isPending && query.isFetching,
+        isRefreshing: query.isFetching,
+        error: query.isError && query.data === undefined
+            ? errorMessageOf(query.error, 'Failed to load archived conversations')
+            : null,
+        refresh: query.refetch,
+    };
+}
+
+const sameConversation = (a: ConversationKey, b: ConversationKey) =>
+    a.otherPartyId === b.otherPartyId && a.otherPartyType === b.otherPartyType;
+
+/**
+ * Archive / unarchive with the rows leaving their list straight away. Both lists are refetched afterwards
+ * rather than restored from a snapshot, so an archive and its Undo can overlap without clobbering each other.
+ */
+export function useConversationArchive() {
+    const queryClient = useQueryClient();
+
+    const run = useCallback(async <T, >(
+        fromKey: readonly string[],
+        keys: ConversationKey[],
+        call: () => Promise<T>,
+    ): Promise<T> => {
+        await queryClient.cancelQueries({queryKey: fromKey, exact: true});
+        queryClient.setQueryData<RecentConversation[]>(fromKey, previous =>
+            previous?.filter(conv => !keys.some(key => sameConversation(key, conv))));
+        try {
+            return await call();
+        } finally {
+            void queryClient.invalidateQueries({queryKey: conversationsQueryKey, exact: true});
+            void queryClient.invalidateQueries({queryKey: archivedConversationsQueryKey, exact: true});
+        }
+    }, [queryClient]);
+
+    const archive = useCallback((keys: ConversationKey[]) =>
+        run(conversationsQueryKey, keys, () => messagingApi.archiveConversations(keys)), [run]);
+
+    const unarchive = useCallback((keys: ConversationKey[]) =>
+        run(archivedConversationsQueryKey, keys, () => messagingApi.unarchiveConversations(keys)), [run]);
+
+    return {archive, unarchive};
+}
 
 /**
  * Hook for managing messages in a conversation

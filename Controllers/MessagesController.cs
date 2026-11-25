@@ -25,11 +25,13 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
         }
     }
 
-    public async Task<IActionResult> GetRecentList()
+    public const int MaxConversationsPerArchive = 500;
+
+    public async Task<IActionResult> GetRecentList(bool archived = false)
     {
         try
         {
-            var recents = await messageRepository.GetRecentListAsync();
+            var recents = await messageRepository.GetRecentListAsync(archived);
             return Json(recents);
         }
         catch (Exception e)
@@ -38,6 +40,50 @@ public class MessagesController(IMessageRepository messageRepository, ITenantInf
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
+
+    [HttpPost]
+    public async Task<IActionResult> ArchiveConversations([FromBody] ConversationArchiveRequest request)
+    {
+        if (InvalidBatch(request) is { } badRequest)
+        {
+            return badRequest;
+        }
+
+        try
+        {
+            return Json(await messageRepository.ArchiveConversationsAsync(request.Conversations));
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error archiving conversations: {Error}", e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> UnarchiveConversations([FromBody] ConversationArchiveRequest request)
+    {
+        if (InvalidBatch(request) is { } badRequest)
+        {
+            return badRequest;
+        }
+
+        try
+        {
+            await messageRepository.UnarchiveConversationsAsync(request.Conversations);
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "Error unarchiving conversations: {Error}", e.Message);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
+    private BadRequestObjectResult InvalidBatch(ConversationArchiveRequest request) =>
+        request?.Conversations is not { Count: > 0 and <= MaxConversationsPerArchive }
+            ? BadRequest($"Send between 1 and {MaxConversationsPerArchive} conversations.")
+            : null;
 
     public async Task<IActionResult> GetMessages(int courierId)
     {

@@ -92,6 +92,69 @@ public class MessagesControllerTests
     }
 
     [Fact]
+    public async Task GetRecentList_Archived_AsksTheRepositoryForArchivedConversations()
+    {
+        var archived = new List<RecentMessageViewModel> { new() { OtherPartyName = "Old" } };
+        _messageRepositoryMock.GetRecentListAsync(true).Returns(archived);
+
+        var result = await CreateController().GetRecentList(archived: true);
+
+        Assert.Same(archived, Assert.IsType<JsonResult>(result).Value);
+    }
+
+    private static ConversationArchiveRequest ArchiveRequest(int count) => new()
+    {
+        Conversations = Enumerable.Range(1, count)
+            .Select(id => new ConversationKey(id, OtherMessagePartyType.Courier))
+            .ToList()
+    };
+
+    [Fact]
+    public async Task ArchiveConversations_ReturnsHowManyWereArchived()
+    {
+        var request = ArchiveRequest(3);
+        _messageRepositoryMock.ArchiveConversationsAsync(request.Conversations).Returns(2);
+
+        var result = await CreateController().ArchiveConversations(request);
+
+        Assert.Equal(2, Assert.IsType<JsonResult>(result).Value);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(MessagesController.MaxConversationsPerArchive + 1)]
+    public async Task ArchiveAndUnarchive_EmptyOrOversizedBatch_ReturnBadRequest(int count)
+    {
+        var controller = CreateController();
+
+        Assert.IsType<BadRequestObjectResult>(await controller.ArchiveConversations(ArchiveRequest(count)));
+        Assert.IsType<BadRequestObjectResult>(await controller.UnarchiveConversations(ArchiveRequest(count)));
+        await _messageRepositoryMock.DidNotReceiveWithAnyArgs().ArchiveConversationsAsync(null);
+        await _messageRepositoryMock.DidNotReceiveWithAnyArgs().UnarchiveConversationsAsync(null);
+    }
+
+    [Fact]
+    public async Task UnarchiveConversations_UnarchivesTheRequestedConversations()
+    {
+        var request = ArchiveRequest(2);
+
+        var result = await CreateController().UnarchiveConversations(request);
+
+        Assert.IsType<OkResult>(result);
+        await _messageRepositoryMock.Received(1).UnarchiveConversationsAsync(request.Conversations);
+    }
+
+    [Fact]
+    public async Task ArchiveConversations_RepositoryThrows_Returns500()
+    {
+        _messageRepositoryMock.ArchiveConversationsAsync(default).ThrowsAsyncForAnyArgs(new Exception("Database error"));
+
+        var result = await CreateController().ArchiveConversations(ArchiveRequest(1));
+
+        Assert.Equal(500, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
     public async Task GetMessages_UsesTheCallersOwnStaffId()
     {
         // Arrange

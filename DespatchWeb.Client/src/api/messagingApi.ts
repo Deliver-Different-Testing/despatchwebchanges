@@ -9,6 +9,7 @@ import {apiClient} from './client';
 import type {RequestOptions} from './requestOptions';
 import {
     ChatMessage,
+    ConversationKey,
     MessageContactOption,
     OtherMessagePartyType,
     QuickResponse,
@@ -28,6 +29,28 @@ export class MessagingApiService {
      */
     async getRecentList(options?: Pick<RequestOptions, 'signal' | 'timeout'>): Promise<RecentConversation[]> {
         return apiClient.get<RecentConversation[]>('messages/GetRecentList', undefined, options);
+    }
+
+    /**
+     * Get the conversations the current staff member has archived
+     */
+    async getArchivedList(options?: Pick<RequestOptions, 'signal' | 'timeout'>): Promise<RecentConversation[]> {
+        return apiClient.get<RecentConversation[]>('messages/GetRecentList', {archived: true}, options);
+    }
+
+    /**
+     * Archive conversations for the current staff member. Returns how many were archived:
+     * the server skips any that have unread messages.
+     */
+    async archiveConversations(conversations: ConversationKey[]): Promise<number> {
+        return apiClient.post<number>('messages/ArchiveConversations', {conversations});
+    }
+
+    /**
+     * Put archived conversations back in the current staff member's list
+     */
+    async unarchiveConversations(conversations: ConversationKey[]): Promise<void> {
+        await apiClient.post('messages/UnarchiveConversations', {conversations});
     }
 
     /**

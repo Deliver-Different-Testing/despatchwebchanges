@@ -22,11 +22,14 @@ import {
     Title,
 } from '@mantine/core';
 import {
+    Archive,
+    ArchiveRestore,
     ArrowLeft,
     Check,
     CheckCheck,
     CircleAlert,
     Clock,
+    ListChecks,
     MessageCircle,
     MessageCirclePlus,
     MessageSquare,
@@ -48,6 +51,7 @@ import {
 import styles from './MessagingDialog.module.css';
 import {
     ChatMessage,
+    ConversationKey,
     MessageContactOption,
     MessageDeliveryType,
     MessagingDialogProps,
@@ -63,12 +67,15 @@ import {AiDraftButton} from '../../common/ai-draft-button/mantine/AiDraftButton'
 import {useAiDraft} from '../../../hooks/useAiDraft';
 import {draftCourierMessage} from '../../../api/aiAssistantApi';
 import {
+    useArchivedConversations,
     useAutoRefresh,
     useContactSearch,
+    useConversationArchive,
     useConversations,
     useMessages,
     useQuickResponses
 } from "../../../hooks/useMessaging";
+import {errorMessageOf} from '../../../utils/errorMessage';
 
 // Static sx values hoisted to module scope. Hot paths inside .map() loops
 // (conversations list, messages list) and the message bubble re-create these
@@ -114,6 +121,10 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         updateConversation,
         addConversation,
     } = useConversations(open);
+
+    const [showArchived, setShowArchived] = useState(false);
+    const archived = useArchivedConversations(open && showArchived);
+    const {archive, unarchive} = useConversationArchive();
 
     const {
         messages,
@@ -439,6 +450,35 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         }
     }, [updateConversation]);
 
+    const handleUnarchive = useCallback(async (keys: ConversationKey[], undoing = false) => {
+        try {
+            await unarchive(keys);
+            if (!undoing) {
+                showToast(`Moved ${conversationCount(keys.length)} back to your list`, 'success');
+            }
+        } catch (err) {
+            showToast(errorMessageOf(err, undoing ? "Couldn't undo the archive" : "Couldn't unarchive conversations"), 'error');
+        }
+    }, [unarchive, showToast]);
+
+    const handleArchive = useCallback(async (keys: ConversationKey[]) => {
+        try {
+            const archivedCount = await archive(keys);
+            const skipped = keys.length - archivedCount;
+            if (archivedCount === 0) {
+                showToast('Nothing archived: those conversations have new messages.', 'warning');
+                return;
+            }
+            const undo = {label: 'Undo', onClick: () => void handleUnarchive(keys, true)};
+            showToast(skipped === 0
+                ? `Archived ${conversationCount(archivedCount)}`
+                : `Archived ${archivedCount} of ${keys.length}: ${skipped} ${skipped === 1 ? 'has' : 'have'} new messages`,
+            'success', undo);
+        } catch (err) {
+            showToast(errorMessageOf(err, "Couldn't archive conversations"), 'error');
+        }
+    }, [archive, handleUnarchive, showToast]);
+
     const getTotalUnreadCount = (): number => {
         return conversations.reduce((total, conv) => total + conv.unreadCount, 0);
     };
@@ -503,16 +543,21 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                         <Box style={{display: 'flex', flex: 1, minHeight: 0}}>
                             {/* Conversations Panel */}
                             <ConversationsPanel
-                                conversations={conversations}
+                                conversations={showArchived ? archived.conversations : conversations}
                                 selectedConversation={selectedConversation}
-                                isLoading={isConversationsLoading}
-                                isSlow={isConversationsSlow}
-                                isRefreshing={isConversationsRefreshing}
+                                isLoading={showArchived ? archived.isLoading : isConversationsLoading}
+                                isSlow={!showArchived && isConversationsSlow}
+                                isRefreshing={showArchived ? archived.isRefreshing : isConversationsRefreshing}
+                                archivedError={showArchived ? archived.error : null}
                                 totalUnreadCount={getTotalUnreadCount()}
+                                showArchived={showArchived}
+                                onShowArchivedChange={setShowArchived}
                                 onSelectConversation={handleSelectConversation}
-                                onRefresh={handleRefreshConversations}
+                                onRefresh={showArchived ? () => void archived.refresh() : handleRefreshConversations}
                                 onNewChat={handleShowNewChat}
                                 onMarkRead={handleMarkConversationRead}
+                                onArchive={handleArchive}
+                                onUnarchive={handleUnarchive}
                             />
 
                             {/* Chat Panel */}
@@ -574,6 +619,10 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
     );
 };
 
+const conversationCount = (n: number) => `${n} conversation${n === 1 ? '' : 's'}`;
+
+const conversationKey = (conv: ConversationKey) => `${conv.otherPartyType}-${conv.otherPartyId}`;
+
 // Helper Components
 
 interface DialogHeaderProps {
@@ -625,11 +674,16 @@ interface ConversationsPanelProps {
     isLoading: boolean;
     isSlow: boolean;
     isRefreshing: boolean;
+    archivedError: string | null;
     totalUnreadCount: number;
+    showArchived: boolean;
+    onShowArchivedChange: (showArchived: boolean) => void;
     onSelectConversation: (conv: RecentConversation) => void;
     onRefresh: () => void;
     onNewChat: () => void;
     onMarkRead: (conv: RecentConversation) => void;
+    onArchive: (keys: ConversationKey[]) => Promise<void>;
+    onUnarchive: (keys: ConversationKey[]) => Promise<void>;
 }
 
 function ConversationsPanel({
@@ -638,22 +692,68 @@ function ConversationsPanel({
                                 isLoading,
                                 isSlow,
                                 isRefreshing,
+                                archivedError,
                                 totalUnreadCount,
+                                showArchived,
+                                onShowArchivedChange,
                                 onSelectConversation,
                                 onRefresh,
                                 onNewChat,
                                 onMarkRead,
+                                onArchive,
+                                onUnarchive,
                             }: ConversationsPanelProps) {
     const [filterText, setFilterText] = useState('');
     const [unreadOnly, setUnreadOnly] = useState(false);
+    const [isSelecting, setIsSelecting] = useState(false);
+    const [selectedKeys, setSelectedKeys] = useState<ReadonlySet<string>>(new Set());
+    const [isApplying, setIsApplying] = useState(false);
 
     const filteredConversations = useMemo(() => {
         const term = filterText.trim().toLowerCase();
         return conversations.filter((conv) => {
-            if (unreadOnly && conv.unreadCount === 0) return false;
+            if (unreadOnly && !showArchived && conv.unreadCount === 0) return false;
             return !(term && !conv.otherPartyName.toLowerCase().includes(term));
         });
-    }, [conversations, filterText, unreadOnly]);
+    }, [conversations, filterText, unreadOnly, showArchived]);
+
+    // A selection only ever covers what is on screen, so changing the filter or view starts it again.
+    useEffect(() => {
+        setSelectedKeys(new Set());
+    }, [filterText, unreadOnly, showArchived]);
+
+    // Unread conversations can't be archived; archived ones are always read.
+    const isSelectable = (conv: RecentConversation) => showArchived || conv.unreadCount === 0;
+    const selectable = filteredConversations.filter(isSelectable);
+    const selected = selectable.filter((conv) => selectedKeys.has(conversationKey(conv)));
+    const hasUnselectableRows = selectable.length < filteredConversations.length;
+
+    const toggleSelected = (conv: RecentConversation) => setSelectedKeys((previous) => {
+        const next = new Set(previous);
+        const key = conversationKey(conv);
+        if (!next.delete(key)) next.add(key);
+        return next;
+    });
+
+    const toggleAll = () => setSelectedKeys(selected.length === selectable.length
+        ? new Set()
+        : new Set(selectable.map(conversationKey)));
+
+    const stopSelecting = () => {
+        setIsSelecting(false);
+        setSelectedKeys(new Set());
+    };
+
+    const applyToSelected = async () => {
+        const keys = selected.map(({otherPartyId, otherPartyType}) => ({otherPartyId, otherPartyType}));
+        setIsApplying(true);
+        try {
+            await (showArchived ? onUnarchive(keys) : onArchive(keys));
+            setSelectedKeys(new Set());
+        } finally {
+            setIsApplying(false);
+        }
+    };
 
     return (
         <Box
@@ -678,6 +778,17 @@ function ConversationsPanel({
                     <Badge color="red" size="sm" circle>{totalUnreadCount}</Badge>
                 )}
                 <Box style={{flex: 1}}/>
+                {conversations.length > 0 && (
+                    <ActionIcon
+                        variant={isSelecting ? 'light' : 'subtle'}
+                        color="gray"
+                        onClick={() => (isSelecting ? stopSelecting() : setIsSelecting(true))}
+                        aria-label="Select conversations"
+                        aria-pressed={isSelecting}
+                    >
+                        <Icon lucide={ListChecks}/>
+                    </ActionIcon>
+                )}
                 <ActionIcon
                     variant="subtle"
                     color="gray"
@@ -691,8 +802,8 @@ function ConversationsPanel({
                 </ActionIcon>
             </Group>
 
-            {/* Filter row */}
-            {conversations.length > 0 && (
+            {/* Filter row: kept in the archived view, even when it's empty, so the way back stays on screen */}
+            {(conversations.length > 0 || showArchived) && (
                 <Group
                     gap={8}
                     px={12}
@@ -716,14 +827,61 @@ function ConversationsPanel({
                     />
                     {/* A real toggle: Chip reports aria-checked, where the MUI Chip
                         was a clickable label wearing a hand-set aria-pressed. */}
+                    {!showArchived && (
+                        <Chip
+                            size="sm"
+                            checked={unreadOnly}
+                            onChange={() => setUnreadOnly((v) => !v)}
+                        >
+                            Unread
+                        </Chip>
+                    )}
                     <Chip
                         size="sm"
-                        checked={unreadOnly}
-                        onChange={() => setUnreadOnly((v) => !v)}
+                        checked={showArchived}
+                        onChange={() => onShowArchivedChange(!showArchived)}
                     >
-                        Unread
+                        Archived
                     </Chip>
                 </Group>
+            )}
+
+            {/* Selection bar */}
+            {isSelecting && filteredConversations.length > 0 && (
+                <Stack
+                    gap={4}
+                    px={12}
+                    py={8}
+                    bg="var(--mantine-color-body)"
+                    style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}
+                >
+                    <Group gap={8} wrap="nowrap">
+                        <Checkbox
+                            size="sm"
+                            label="Select all"
+                            checked={selectable.length > 0 && selected.length === selectable.length}
+                            indeterminate={selected.length > 0 && selected.length < selectable.length}
+                            disabled={selectable.length === 0}
+                            onChange={toggleAll}
+                        />
+                        <Text fz="xs" c="dimmed" aria-live="polite" style={{flex: 1}}>
+                            {selected.length} selected
+                        </Text>
+                        <Button
+                            size="xs"
+                            leftSection={<Icon lucide={showArchived ? ArchiveRestore : Archive} size={14}/>}
+                            disabled={selected.length === 0}
+                            loading={isApplying}
+                            onClick={() => void applyToSelected()}
+                        >
+                            {showArchived ? 'Unarchive' : 'Archive'}
+                        </Button>
+                        <CloseButton size="sm" aria-label="Stop selecting" onClick={stopSelecting}/>
+                    </Group>
+                    {hasUnselectableRows && (
+                        <Text fz="xs" c="dimmed">Unread conversations can't be archived. Read them first.</Text>
+                    )}
+                </Stack>
             )}
 
             {/* Loading indicator */}
@@ -744,12 +902,28 @@ function ConversationsPanel({
                     {filteredConversations.map((conv) => {
                         const isSelected = selectedConversation?.otherPartyId === conv.otherPartyId
                             && selectedConversation?.otherPartyType === conv.otherPartyType;
+                        const canSelect = isSelectable(conv);
+                        const activate = () => {
+                            if (!isSelecting) onSelectConversation(conv);
+                            else if (canSelect) toggleSelected(conv);
+                        };
                         return (
                             <Box
                                 component="li"
-                                key={`${conv.otherPartyId}-${conv.otherPartyType}`}
+                                key={conversationKey(conv)}
                                 className={styles.conversationRow}
-                                onClick={() => onSelectConversation(conv)}
+                                onClick={activate}
+                                // Outside selection mode the row opens the chat, so it must be keyboard-reachable;
+                                // in selection mode the checkbox is the control.
+                                role={isSelecting ? undefined : 'button'}
+                                tabIndex={isSelecting ? undefined : 0}
+                                aria-current={isSelected || undefined}
+                                onKeyDown={isSelecting ? undefined : (e: React.KeyboardEvent) => {
+                                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                                        e.preventDefault();
+                                        activate();
+                                    }
+                                }}
                                 px={12}
                                 py={8}
                                 bg={isSelected ? 'var(--mantine-color-gray-1)' : undefined}
@@ -761,6 +935,18 @@ function ConversationsPanel({
                                     borderLeft: `3px solid ${isSelected ? 'var(--mantine-primary-color-filled)' : 'transparent'}`,
                                 }}
                             >
+                                {isSelecting && (
+                                    <Checkbox
+                                        size="sm"
+                                        aria-label={canSelect
+                                            ? `Select conversation with ${conv.otherPartyName}`
+                                            : `Conversation with ${conv.otherPartyName} has unread messages`}
+                                        checked={selectedKeys.has(conversationKey(conv))}
+                                        disabled={!canSelect}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={() => toggleSelected(conv)}
+                                    />
+                                )}
                                 <Indicator
                                     size={10}
                                     offset={4}
@@ -798,7 +984,7 @@ function ConversationsPanel({
                                     </Group>
                                 </Box>
 
-                                {conv.unreadCount > 0 && (
+                                {conv.unreadCount > 0 && !isSelecting && (
                                     <ActionIcon
                                         className={styles.markRead}
                                         variant="subtle"
@@ -819,8 +1005,28 @@ function ConversationsPanel({
                 </Box>
             )}
 
+            {showArchived && archivedError && (
+                <EmptyState
+                    icon={<Icon lucide={CircleAlert} size={EMPTY_GLYPH_SIZE}/>}
+                    message={archivedError}
+                    action={<Button variant="subtle" onClick={onRefresh}>Retry</Button>}
+                />
+            )}
+
+            {showArchived && !archivedError && !isLoading && conversations.length === 0 && (
+                <EmptyState
+                    icon={<Icon lucide={Archive} size={EMPTY_GLYPH_SIZE}/>}
+                    message="No archived conversations"
+                    action={
+                        <Button variant="subtle" onClick={() => onShowArchivedChange(false)}>
+                            Back to conversations
+                        </Button>
+                    }
+                />
+            )}
+
             {/* Empty State */}
-            {!isLoading && conversations.length === 0 && (
+            {!showArchived && !isLoading && conversations.length === 0 && (
                 <EmptyState
                     icon={<Icon lucide={MessageSquare} size={EMPTY_GLYPH_SIZE}/>}
                     message="No conversations yet"
