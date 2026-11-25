@@ -579,6 +579,18 @@ describe('MessagingDialog', () => {
         expect(await screen.findByText('No archived conversations')).toBeInTheDocument();
     });
 
+    it('does not offer a new chat with no messages yet for archiving', async () => {
+        const user = setupUser();
+        setupApiDefaults([createConversation({otherPartyName: 'Fresh', lastMessage: ''})]);
+        renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await screen.findByText('Fresh');
+        await user.click(screen.getByRole('button', {name: 'Select conversations'}));
+
+        expect(screen.getByRole('checkbox', {name: /Fresh has no messages yet/})).toBeDisabled();
+        expect(screen.queryByText(/Unread conversations can't be archived/)).not.toBeInTheDocument();
+    });
+
     it('reaches archived conversations when everything has been archived', async () => {
         const user = setupUser();
         setupApiDefaults([]);

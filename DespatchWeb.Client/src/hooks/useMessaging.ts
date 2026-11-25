@@ -102,6 +102,7 @@ export const archivedConversationsQueryKey = ['messages', 'archived-conversation
 
 /** The archived list, fetched only while it is on screen. */
 export function useArchivedConversations(enabled: boolean) {
+    const queryClient = useQueryClient();
     const query = useQuery({
         queryKey: archivedConversationsQueryKey,
         queryFn: ({signal}) => messagingApi.getArchivedList({signal, timeout: CONVERSATIONS_TIMEOUT_MS}),
@@ -112,6 +113,13 @@ export function useArchivedConversations(enabled: boolean) {
         retry: false,
     });
 
+    useEffect(() => {
+        if (!enabled) void queryClient.cancelQueries({queryKey: archivedConversationsQueryKey});
+    }, [enabled, queryClient]);
+
+    const {refetch} = query;
+    const refresh = useCallback(() => refetch({cancelRefetch: false}), [refetch]);
+
     return {
         conversations: query.data ?? EMPTY_CONVERSATIONS,
         isLoading: query.isPending && query.isFetching,
@@ -119,7 +127,7 @@ export function useArchivedConversations(enabled: boolean) {
         error: query.isError && query.data === undefined
             ? errorMessageOf(query.error, 'Failed to load archived conversations')
             : null,
-        refresh: query.refetch,
+        refresh,
     };
 }
 

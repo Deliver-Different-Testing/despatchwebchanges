@@ -274,12 +274,14 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                 }
             );
             showToast('Message sent', 'success');
+            // A reply un-archives the conversation server-side; move it out of the archived view now, not on the next poll.
+            if (showArchived) void archived.refresh();
         } catch (err) {
             console.error('Failed to send message:', err);
             updateMessage(tempId, {status: 'failed'});
             showToast("Couldn't send message. Check your connection and try again.", 'error');
         }
-    }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast]);
+    }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast, showArchived, archived.refresh]);
 
     const handleSendMessage = async () => {
         const content = newMessage.trim();
@@ -456,8 +458,10 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             if (!undoing) {
                 showToast(`Moved ${conversationCount(keys.length)} back to your list`, 'success');
             }
+            return true;
         } catch (err) {
             showToast(errorMessageOf(err, undoing ? "Couldn't undo the archive" : "Couldn't unarchive conversations"), 'error');
+            return false;
         }
     }, [unarchive, showToast]);
 
@@ -467,15 +471,17 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             const skipped = keys.length - archivedKeys.length;
             if (archivedKeys.length === 0) {
                 showToast('Nothing archived: those conversations have new messages.', 'warning');
-                return;
+                return true;
             }
             const undo = {label: 'Undo', onClick: () => void handleUnarchive(archivedKeys, true)};
             showToast(skipped === 0
                 ? `Archived ${conversationCount(archivedKeys.length)}`
                 : `Archived ${archivedKeys.length} of ${keys.length}: ${skipped} ${skipped === 1 ? 'has' : 'have'} new messages`,
             'success', undo);
+            return true;
         } catch (err) {
             showToast(errorMessageOf(err, "Couldn't archive conversations"), 'error');
+            return false;
         }
     }, [archive, handleUnarchive, showToast]);
 
@@ -682,8 +688,9 @@ interface ConversationsPanelProps {
     onRefresh: () => void;
     onNewChat: () => void;
     onMarkRead: (conv: RecentConversation) => void;
-    onArchive: (keys: ConversationKey[]) => Promise<void>;
-    onUnarchive: (keys: ConversationKey[]) => Promise<void>;
+    /** Resolves false when the request failed, so the selection is kept for a retry. */
+    onArchive: (keys: ConversationKey[]) => Promise<boolean>;
+    onUnarchive: (keys: ConversationKey[]) => Promise<boolean>;
 }
 
 function ConversationsPanel({
@@ -722,11 +729,13 @@ function ConversationsPanel({
         setSelectedKeys(new Set());
     }, [filterText, unreadOnly, showArchived]);
 
-    // Unread conversations can't be archived; archived ones are always read.
-    const isSelectable = (conv: RecentConversation) => showArchived || conv.unreadCount === 0;
+    // Unread conversations can't be archived (archived ones are always read), and nor can a new chat that has no
+    // messages yet: the server has nothing to archive.
+    const isSelectable = (conv: RecentConversation) =>
+        showArchived || (conv.unreadCount === 0 && !!conv.lastMessage);
     const selectable = filteredConversations.filter(isSelectable);
     const selected = selectable.filter((conv) => selectedKeys.has(conversationKey(conv)));
-    const hasUnselectableRows = selectable.length < filteredConversations.length;
+    const hasUnreadRows = !showArchived && filteredConversations.some((conv) => conv.unreadCount > 0);
 
     const toggleSelected = (conv: RecentConversation) => setSelectedKeys((previous) => {
         const next = new Set(previous);
@@ -748,8 +757,9 @@ function ConversationsPanel({
         const keys = selected.map(({otherPartyId, otherPartyType}) => ({otherPartyId, otherPartyType}));
         setIsApplying(true);
         try {
-            await (showArchived ? onUnarchive(keys) : onArchive(keys));
-            setSelectedKeys(new Set());
+            if (await (showArchived ? onUnarchive(keys) : onArchive(keys))) {
+                setSelectedKeys(new Set());
+            }
         } finally {
             setIsApplying(false);
         }
@@ -778,7 +788,7 @@ function ConversationsPanel({
                     <Badge color="red" size="sm" circle>{totalUnreadCount}</Badge>
                 )}
                 <Box style={{flex: 1}}/>
-                {conversations.length > 0 && (
+                {(conversations.length > 0 || isSelecting) && (
                     <ActionIcon
                         variant={isSelecting ? 'light' : 'subtle'}
                         color="gray"
@@ -878,7 +888,7 @@ function ConversationsPanel({
                         </Button>
                         <CloseButton size="sm" aria-label="Stop selecting" onClick={stopSelecting}/>
                     </Group>
-                    {hasUnselectableRows && (
+                    {hasUnreadRows && (
                         <Text fz="xs" c="dimmed">Unread conversations can't be archived. Read them first.</Text>
                     )}
                 </Stack>
@@ -940,7 +950,9 @@ function ConversationsPanel({
                                         size="sm"
                                         aria-label={canSelect
                                             ? `Select conversation with ${conv.otherPartyName}`
-                                            : `Conversation with ${conv.otherPartyName} has unread messages`}
+                                            : conv.unreadCount > 0
+                                                ? `Conversation with ${conv.otherPartyName} has unread messages`
+                                                : `Conversation with ${conv.otherPartyName} has no messages yet`}
                                         checked={selectedKeys.has(conversationKey(conv))}
                                         disabled={!canSelect}
                                         onClick={(e) => e.stopPropagation()}

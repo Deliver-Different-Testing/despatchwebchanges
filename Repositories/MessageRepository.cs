@@ -63,15 +63,16 @@ public class MessageRepository(
             .ToDictionaryAsync(a => (a.OtherPartyId, IsCourier: a.OtherPartyType == (byte)OtherMessagePartyType.Courier),
                 a => a.ArchivedThroughMessageId);
 
-        // Stats and the latest-message query run separately, so a conversation whose first message lands between
-        // them has no stats row.
-        bool IsArchived(int otherPartyId, bool isCourier) =>
-            watermarks.TryGetValue((otherPartyId, isCourier), out var through)
-            && stats.TryGetValue((otherPartyId, isCourier), out var stat)
-            && stat.MaxMessageId <= through;
+        // Stats and the latest-message query run separately, so a message landing between them is missing from the
+        // stats; checking the latest message's own id too keeps it out of the archived view.
+        bool IsArchived(PartnerMessage m) =>
+            watermarks.TryGetValue((m.OtherPartyId, m.IsCourier), out var through)
+            && stats.TryGetValue((m.OtherPartyId, m.IsCourier), out var stat)
+            && stat.MaxMessageId <= through
+            && m.UcmmId <= through;
 
         var latest = (await LatestMessagePerPartner(partnerMessages).ToListAsync())
-            .Where(m => IsArchived(m.OtherPartyId, m.IsCourier) == archived)
+            .Where(m => IsArchived(m) == archived)
             .ToList();
 
         var courierIds = latest.Where(m => m.IsCourier).Select(m => m.OtherPartyId).ToList();
@@ -159,8 +160,13 @@ public class MessageRepository(
         }
         catch (DbUpdateException e) when (e.InnerException is SqlException { Number: 2627 or 2601 })
         {
-            // An overlapping archive of the same conversation inserted first; the conversation is archived either way.
-            Log.Information(e, "Concurrent archive by staff {StaffId} already archived these conversations", staffId);
+            // An overlapping archive inserted first and this batch rolled back, so report only what is archived now.
+            Log.Information(e, "Concurrent archive by staff {StaffId} overlapped these conversations", staffId);
+            archived = (await ArchiveRowsFor(staffId, archivedCourierIds, archivedStaffIds)
+                    .Select(a => new { a.OtherPartyId, a.OtherPartyType })
+                    .ToListAsync())
+                .Select(a => new ConversationKey(a.OtherPartyId, (OtherMessagePartyType)a.OtherPartyType))
+                .ToList();
         }
         finally
         {
