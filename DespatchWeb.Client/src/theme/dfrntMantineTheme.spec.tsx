@@ -1,6 +1,6 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
-import {Button} from '@mantine/core';
+import {Button, Card, Paper} from '@mantine/core';
 import {renderWithMantine} from '../test/utils';
 import {
     dfrntTheme,
@@ -10,6 +10,7 @@ import {
 } from './dfrntMantineTheme';
 import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {contrastRatio, getMd3Scheme} from './md3';
+import surfaceClasses from './surfaceDefaults.module.css';
 import {dfrntPrimaryPalette, inkBluePalette} from './palettes';
 
 describe('dfrntTheme glass dropdowns', () => {
@@ -21,6 +22,26 @@ describe('dfrntTheme glass dropdowns', () => {
 
     it('routes PopoverDropdown through GlassDropdownRoot', () => {
         expect(dfrntTheme.components?.PopoverDropdown?.defaultProps?.component).toBe(GlassDropdownRoot);
+    });
+});
+
+describe('dfrntTheme surface defaults', () => {
+    // An inline default outranks every consumer class, which hid the sticky-note fills (#1040).
+    it.each([
+        ['Paper', Paper],
+        ['Card', Card],
+    ] as const)('gives %s its surface tone without an inline background', (_, Surface) => {
+        renderWithMantine(<Surface data-testid="surface">content</Surface>);
+
+        const root = screen.getByTestId('surface');
+        expect(root.style.backgroundColor).toBe('');
+        expect(root).toHaveClass(surfaceClasses.surface);
+    });
+
+    it('still lets an inline background win over the default', () => {
+        renderWithMantine(<Paper data-testid="surface" style={{backgroundColor: 'red'}}>content</Paper>);
+
+        expect(screen.getByTestId('surface').style.backgroundColor).toBe('red');
     });
 });
 

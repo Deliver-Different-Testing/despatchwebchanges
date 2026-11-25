@@ -27,6 +27,7 @@ import {createTheme, type CSSVariablesResolver, type MantineColorsTuple} from '@
 import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {contrastRatio, getMd3Scheme, type Md3Mode} from './md3';
 import {generateRamp} from './colorMath';
+import surfaceClasses from './surfaceDefaults.module.css';
 import {inkReadsOnFill, TEXT_MIN_CONTRAST_HIGH, type ThemeAppearance} from './appearance';
 
 // --- Brand ramps (0 lightest → 9 darkest) ---
@@ -261,16 +262,16 @@ export function createDfrntTheme(appearance: ThemeAppearance = STANDARD_APPEARAN
             Button: {defaultProps: {radius: 'sm'}},
             ActionIcon: {defaultProps: {radius: 'sm'}},
             // Cards/paper sit one tonal tier above the page in both schemes, plus a soft
-            // shadow for a little lift. Background applied as a class-based `styles.root`,
-            // NOT a `bg` defaultProp, so a component's own inline `style={{background}}`
-            // still wins.
+            // shadow for a little lift. The tone is a layered class (surfaceDefaults.module.css),
+            // never `styles.root`: Mantine renders theme `styles` inline, which would beat every
+            // consumer's CSS-module background (it hid the sticky-note fills).
             Card: {
                 defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
-                styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
+                classNames: {root: surfaceClasses.surface},
             },
             Paper: {
                 defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
-                styles: {root: {backgroundColor: 'var(--dd-surface-container)'}},
+                classNames: {root: surfaceClasses.surface},
             },
             // Not given the `card` radius or glass `overlayProps` defaults: every dialog
             // goes through DialogShell, which composes `Modal.Root`/`Overlay`/`Content`
