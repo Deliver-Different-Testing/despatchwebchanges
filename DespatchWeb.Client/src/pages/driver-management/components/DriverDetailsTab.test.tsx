@@ -166,9 +166,17 @@ describe('DriverDetailsTab', () => {
             setupMocks({driver: mockDriverData});
             renderWithProviders();
 
+            expect(screen.getByText('Number plate')).toBeInTheDocument();
             expect(screen.getByText('Vehicle information')).toBeInTheDocument();
             expect(screen.getByText('ABC123')).toBeInTheDocument();
             expect(screen.getByText('Toyota Hiace')).toBeInTheDocument();
+        });
+
+        it('should show a dash when no number plate is saved', () => {
+            setupMocks({driver: {...mockDriverData, vehicleInformation: {...mockDriverData.vehicleInformation, rego: '  '}}});
+            renderWithProviders();
+
+            expect(screen.getByText('Number plate').nextElementSibling).toHaveTextContent('—');
         });
 
         it('should display compliance information', () => {

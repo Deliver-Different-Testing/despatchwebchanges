@@ -45,7 +45,7 @@ public class CourierDriverManagementListTests : IAsyncDisposable
         var courier = new TucCourier
         {
             UccrId = id, Code = code, UccrName = first, UccrSurname = last, Active = active,
-            CourierFleetId = fleet, UccrChannelId = 1, VehiclePlateNnumber = "ABC123",
+            CourierFleetId = fleet, UccrChannelId = 1, UccrReg = "ABC123",
             Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
         };
         configure?.Invoke(courier);
@@ -308,8 +308,8 @@ public class CourierDriverManagementListTests : IAsyncDisposable
     [Fact]
     public async Task Compliance_DriverWithoutVehicle_HasNoWofOrRegistrationRows()
     {
-        await SeedAsync(Courier(1, "A01", "Aroha", "Ngata", configure: c => c.VehiclePlateNnumber = "  "),
-            Courier(2, "B02", "Ben", "Hill", configure: c => c.VehiclePlateNnumber = null));
+        await SeedAsync(Courier(1, "A01", "Aroha", "Ngata", configure: c => c.UccrReg = "  "),
+            Courier(2, "B02", "Ben", "Hill", configure: c => c.UccrReg = null));
         var repo = CreateRepository();
 
         var result = await repo.GetAllCourierComplianceAsync(Req());
@@ -534,5 +534,55 @@ public class CourierDriverManagementListTests : IAsyncDisposable
         Assert.False(ben.BankingAndEmergency.EmergencyContact);
         Assert.False(ben.BankingAndEmergency.SecurityCheck);
         Assert.Null(ben.BankingAndEmergency.SecurityCheckDate);
+    }
+
+    // ---------------------------------------------------------------- number plate (uccrReg, as saved by Settings)
+
+    private Task SeedPlatesAsync() => SeedAsync(
+        Courier(1, "A01", "Aroha", "Ngata", configure: c => c.UccrReg = "NZX123"),
+        Courier(2, "B02", "Ben", "Hill", configure: c =>
+        {
+            c.UccrReg = "QRT456";
+            c.VehiclePlateNnumber = "NZX999";
+        }));
+
+    [Fact]
+    public async Task Details_RegoIsThePlateSavedInSettings()
+    {
+        await SeedPlatesAsync();
+
+        var repo = CreateRepository();
+
+        var aroha = await repo.GetCourierDetailsForDashboardAsync(1);
+        var ben = await repo.GetCourierDetailsForDashboardAsync(2);
+
+        Assert.Equal("NZX123", aroha.VehicleInformation.Rego);
+        Assert.Equal("QRT456", ben.VehicleInformation.Rego);
+    }
+
+    [Fact]
+    public async Task Search_MatchesThePlateSavedInSettings()
+    {
+        await SeedPlatesAsync();
+        await SeedAsync(new TblAfterhoursCourier
+        {
+            Id = 1, CourierId = 1, WeekDay = 1,
+            StartTime = new DateTime(2000, 1, 1, 8, 0, 0), EndTime = new DateTime(2000, 1, 1, 16, 0, 0)
+        }, new TblAfterhoursCourier
+        {
+            Id = 2, CourierId = 2, WeekDay = 1,
+            StartTime = new DateTime(2000, 1, 1, 8, 0, 0), EndTime = new DateTime(2000, 1, 1, 16, 0, 0)
+        });
+        var repo = CreateRepository();
+
+        var compliance = await repo.GetAllCourierComplianceAsync(Req(search: "NZX"));
+        var afterHours = await repo.GetAfterHoursCourierScheduleAsync(
+            new CourierAfterHoursFilterRequest { Page = 1, PageSize = 10, SearchTerm = "NZX" });
+        var suggestions = await repo.SearchAllCouriersAsync("NZX");
+
+        Assert.All(compliance.Items, i => Assert.Equal("A01", i.Code));
+        Assert.NotEmpty(compliance.Items);
+        Assert.Equal(["Aroha Ngata"], afterHours.Items.Select(i => i.CourierName));
+        Assert.Equal([1], suggestions.Select(s => s.Id));
     }
 }
