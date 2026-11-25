@@ -4,8 +4,8 @@
  * own accent as a custom property (brand, or Auto-mate's) and these rules
  * resolve against it.
  *
- * The resting border and background stay Mantine's, set by `withBorder` on the
- * Paper rather than inline, so these rules can actually reach them.
+ * The resting border comes from `withBorder` and the background from the theme's
+ * Paper surface class, neither inline, so these rules can actually reach them.
  */
 .settingRow {
     transition: border-color 150ms ease, background-color 150ms ease;
@@ -13,5 +13,5 @@
 
 .settingRow[data-clickable]:hover {
     border-color: var(--setting-accent);
-    background-color: color-mix(in srgb, var(--setting-accent) 4%, var(--mantine-color-body));
+    background-color: color-mix(in srgb, var(--setting-accent) 4%, var(--dd-surface-container));
 }
