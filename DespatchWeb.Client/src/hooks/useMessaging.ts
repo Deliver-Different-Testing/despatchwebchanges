@@ -5,7 +5,7 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useIsMutating, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {
     ChatMessage,
     ConversationKey,
@@ -23,6 +23,16 @@ export const CONVERSATIONS_REFRESH_MS = 20_000;
 /** Shorter than the client-wide 30s so a stuck load turns into an error with Retry sooner. */
 export const CONVERSATIONS_TIMEOUT_MS = 20_000;
 export const SLOW_LOAD_HINT_MS = 8_000;
+const archiveMutationKey = ['messages', 'archive'] as const;
+
+/**
+ * Polls pause while an archive/unarchive is in flight: a poll that reads the server before the write commits would
+ * put the rows the user just moved back into their old list.
+ */
+function useConversationsPollMs(enabled: boolean) {
+    const archiving = useIsMutating({mutationKey: archiveMutationKey}) > 0;
+    return enabled && !archiving ? CONVERSATIONS_REFRESH_MS : false;
+}
 
 /**
  * The conversation list, fetched and polled only while the message center is open.
@@ -30,11 +40,12 @@ export const SLOW_LOAD_HINT_MS = 8_000;
  */
 export function useConversations(open: boolean) {
     const queryClient = useQueryClient();
+    const refetchInterval = useConversationsPollMs(open);
     const query = useQuery({
         queryKey: conversationsQueryKey,
         queryFn: ({signal}) => messagingApi.getRecentList({signal, timeout: CONVERSATIONS_TIMEOUT_MS}),
         enabled: open,
-        refetchInterval: open ? CONVERSATIONS_REFRESH_MS : false,
+        refetchInterval,
         staleTime: 0,
         // The panel offers Retry; silent retries would only hold the spinner up longer.
         retry: false,
@@ -103,12 +114,13 @@ export const archivedConversationsQueryKey = ['messages', 'archived-conversation
 /** The archived list, fetched only while it is on screen. */
 export function useArchivedConversations(enabled: boolean) {
     const queryClient = useQueryClient();
+    // Polled like the main list so a conversation that gets a new message leaves this view.
+    const refetchInterval = useConversationsPollMs(enabled);
     const query = useQuery({
         queryKey: archivedConversationsQueryKey,
         queryFn: ({signal}) => messagingApi.getArchivedList({signal, timeout: CONVERSATIONS_TIMEOUT_MS}),
         enabled,
-        // Polled like the main list so a conversation that gets a new message leaves this view.
-        refetchInterval: enabled ? CONVERSATIONS_REFRESH_MS : false,
+        refetchInterval,
         staleTime: 0,
         retry: false,
     });
@@ -157,11 +169,17 @@ export function useConversationArchive() {
         }
     }, [queryClient]);
 
-    const archive = useCallback((keys: ConversationKey[]) =>
-        run(conversationsQueryKey, keys, () => messagingApi.archiveConversations(keys)), [run]);
+    const {mutateAsync: archive} = useMutation({
+        mutationKey: archiveMutationKey,
+        mutationFn: (keys: ConversationKey[]) =>
+            run(conversationsQueryKey, keys, () => messagingApi.archiveConversations(keys)),
+    });
 
-    const unarchive = useCallback((keys: ConversationKey[]) =>
-        run(archivedConversationsQueryKey, keys, () => messagingApi.unarchiveConversations(keys)), [run]);
+    const {mutateAsync: unarchive} = useMutation({
+        mutationKey: archiveMutationKey,
+        mutationFn: (keys: ConversationKey[]) =>
+            run(archivedConversationsQueryKey, keys, () => messagingApi.unarchiveConversations(keys)),
+    });
 
     return {archive, unarchive};
 }

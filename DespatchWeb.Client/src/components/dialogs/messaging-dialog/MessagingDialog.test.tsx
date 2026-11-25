@@ -591,6 +591,22 @@ describe('MessagingDialog', () => {
         expect(screen.queryByText(/Unread conversations can't be archived/)).not.toBeInTheDocument();
     });
 
+    it('reopens on the main list after being closed in the archived view', async () => {
+        const user = setupUser();
+        setupApiDefaults([createConversation({otherPartyName: 'Alice'})]);
+        const {rerender} = renderWithTheme(<MessagingDialog {...defaultProps} />);
+
+        await screen.findByText('Alice');
+        await user.click(screen.getByRole('checkbox', {name: 'Archived'}));
+        expect(await screen.findByText('No archived conversations')).toBeInTheDocument();
+
+        rerender(<MessagingDialog {...defaultProps} open={false} />);
+        rerender(<MessagingDialog {...defaultProps} open />);
+
+        expect(await screen.findByText('Alice')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox', {name: 'Archived'})).not.toBeChecked();
+    });
+
     it('reaches archived conversations when everything has been archived', async () => {
         const user = setupUser();
         setupApiDefaults([]);

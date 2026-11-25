@@ -123,6 +123,10 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
     } = useConversations(open);
 
     const [showArchived, setShowArchived] = useState(false);
+    // Reopening the message center starts on the main list, where new messages are.
+    useEffect(() => {
+        if (!open) setShowArchived(false);
+    }, [open]);
     const archived = useArchivedConversations(open && showArchived);
     const {archive, unarchive} = useConversationArchive();
 
@@ -161,6 +165,21 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             showToast(`Couldn't refresh conversations. ${result.error.message}`, 'error');
         }
     }, [refreshConversations, showToast]);
+
+    const handleRefreshArchived = useCallback(async () => {
+        const result = await archived.refresh();
+        if (result.isError && result.data !== undefined) {
+            showToast(`Couldn't refresh archived conversations. ${result.error.message}`, 'error');
+        }
+    }, [archived.refresh, showToast]);
+
+    // Sending un-archives the conversation server-side. It may be in neither cached list (updateConversation only
+    // patches the main one), so refetch both rather than leave it missing until the next poll.
+    const refreshAfterUnarchivingSend = useCallback(() => {
+        if (!showArchived) return;
+        void archived.refresh();
+        void refreshConversations();
+    }, [showArchived, archived.refresh, refreshConversations]);
 
     // Auto-refresh messages every 10 seconds when a conversation is selected
     useAutoRefresh(
@@ -274,14 +293,13 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                 }
             );
             showToast('Message sent', 'success');
-            // A reply un-archives the conversation server-side; move it out of the archived view now, not on the next poll.
-            if (showArchived) void archived.refresh();
+            refreshAfterUnarchivingSend();
         } catch (err) {
             console.error('Failed to send message:', err);
             updateMessage(tempId, {status: 'failed'});
             showToast("Couldn't send message. Check your connection and try again.", 'error');
         }
-    }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast, showArchived, archived.refresh]);
+    }, [selectedConversation, messageDeliveryType, currentStaffId, addOptimisticMessage, updateMessage, updateConversation, showToast, refreshAfterUnarchivingSend]);
 
     const handleSendMessage = async () => {
         const content = newMessage.trim();
@@ -330,6 +348,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             setShowNewChatView(false);
 
             showToast(`Message sent to ${courierIds.length + staffIds.length} contacts`, 'success');
+            refreshAfterUnarchivingSend();
         } catch (err) {
             console.error('Failed to send multi message:', err);
             showToast("Couldn't send message to all contacts. Check your connection and try again.", 'error');
@@ -559,7 +578,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                 showArchived={showArchived}
                                 onShowArchivedChange={setShowArchived}
                                 onSelectConversation={handleSelectConversation}
-                                onRefresh={showArchived ? () => void archived.refresh() : handleRefreshConversations}
+                                onRefresh={showArchived ? handleRefreshArchived : handleRefreshConversations}
                                 onNewChat={handleShowNewChat}
                                 onMarkRead={handleMarkConversationRead}
                                 onArchive={handleArchive}
