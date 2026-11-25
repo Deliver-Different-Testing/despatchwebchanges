@@ -131,6 +131,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[StaffConversationArchive]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[StaffDispatchLayout]",
          "ObjectType": 0
       },

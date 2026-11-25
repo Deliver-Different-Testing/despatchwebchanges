@@ -60,6 +60,11 @@ export interface RecentConversation {
 }
 
 /**
+ * Identifies a conversation from the current staff member's side.
+ */
+export type ConversationKey = Pick<RecentConversation, 'otherPartyId' | 'otherPartyType'>;
+
+/**
  * Request payload for sending a single message.
  */
 export interface SendMessageRequest {

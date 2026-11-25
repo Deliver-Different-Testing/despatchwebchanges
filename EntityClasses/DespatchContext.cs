@@ -75,6 +75,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<Route> Routes { get; set; }
 
+    public virtual DbSet<StaffConversationArchive> StaffConversationArchives { get; set; }
+
     public virtual DbSet<StaffDispatchLayout> StaffDispatchLayouts { get; set; }
 
     public virtual DbSet<StaffPreference> StaffPreferences { get; set; }
@@ -1504,6 +1506,17 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Depot).WithMany(p => p.Routes)
                 .HasForeignKey(d => d.DepotId)
                 .HasConstraintName("FK_Routes_DepotId");
+        });
+
+        modelBuilder.Entity<StaffConversationArchive>(entity =>
+        {
+            entity.HasKey(e => new { e.StaffId, e.OtherPartyType, e.OtherPartyId });
+
+            entity.ToTable("StaffConversationArchive");
+
+            entity.Property(e => e.ArchivedAtUtc)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysutcdatetime())", "DF_StaffConversationArchive_ArchivedAtUtc");
         });
 
         modelBuilder.Entity<StaffDispatchLayout>(entity =>
