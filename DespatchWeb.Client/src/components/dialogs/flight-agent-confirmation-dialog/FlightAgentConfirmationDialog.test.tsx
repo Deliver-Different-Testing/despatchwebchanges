@@ -791,15 +791,14 @@ describe('FlightAgentConfirmationDialog', () => {
     });
 
     describe('Agent Email Template', () => {
-        const DEFAULT_SUBJECT = 'New job assigned [JobNumber]';
-        const DEFAULT_BODY = 'Hi [AgentName]\n\nYou have been assigned a new job [JobNumber]. [InboundUrl]';
+        const SUBJECT = 'New job assigned KT107DF3';
 
         const willEmailPreview = {
             status: 'Queued',
             agentEmail: 'agent@example.com',
             willEmail: true,
-            defaultSubject: DEFAULT_SUBJECT,
-            defaultBody: DEFAULT_BODY,
+            subject: SUBJECT,
+            html: '<p>Hi Metro Air</p>',
         };
 
         afterEach(() => {
@@ -807,18 +806,18 @@ describe('FlightAgentConfirmationDialog', () => {
             mockPreview.mockImplementation(neverResolves);
         });
 
-        it('renders subject and body fields seeded from the server default templates', async () => {
+        it('shows the rendered subject and the email preview', async () => {
             mockPreview.mockResolvedValue(willEmailPreview);
 
             renderWithTheme(
                 <FlightAgentConfirmationDialog {...defaultProps} mode="agent" agent={createAgent()}/>
             );
 
-            expect(await screen.findByLabelText('Subject')).toHaveValue(DEFAULT_SUBJECT);
-            expect(screen.getByLabelText('Message')).toHaveValue(DEFAULT_BODY);
+            expect(await screen.findByLabelText('Subject')).toHaveValue(SUBJECT);
+            expect(screen.getByTitle('Agent email preview')).toHaveAttribute('srcdoc', '<p>Hi Metro Air</p>');
         });
 
-        it('passes the edited subject and body to onConfirm', async () => {
+        it('passes the edited subject and the note to onConfirm', async () => {
             const user = setupUser();
             const onConfirm = vi.fn();
             mockPreview.mockResolvedValue(willEmailPreview);
@@ -832,17 +831,19 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            const bodyInput = await screen.findByLabelText('Message');
-            await user.clear(bodyInput);
-            await user.click(bodyInput);
-            await user.paste('Edited body for the agent');
+            const subjectInput = await screen.findByLabelText('Subject');
+            await user.clear(subjectInput);
+            await user.click(subjectInput);
+            await user.paste('Urgent [JobNumber]');
+            await user.click(screen.getByLabelText(/Add a note/));
+            await user.paste('Gate code 4411');
 
             await user.click(screen.getByText('Confirm assignment'));
 
             expect(onConfirm).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    emailSubject: DEFAULT_SUBJECT,
-                    emailBody: 'Edited body for the agent',
+                    emailSubject: 'Urgent [JobNumber]',
+                    emailNote: 'Gate code 4411',
                 })
             );
         });
@@ -854,8 +855,6 @@ describe('FlightAgentConfirmationDialog', () => {
                 status: 'NoAgentEmail',
                 agentEmail: null,
                 willEmail: false,
-                defaultSubject: DEFAULT_SUBJECT,
-                defaultBody: DEFAULT_BODY,
             });
 
             renderWithTheme(
@@ -869,13 +868,13 @@ describe('FlightAgentConfirmationDialog', () => {
 
             // The warning notice resolves; the editable fields must not appear.
             await waitFor(() => expect(mockPreview).toHaveBeenCalled());
-            expect(screen.queryByLabelText('Message')).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(/Add a note/)).not.toBeInTheDocument();
 
             await user.click(screen.getByText('Confirm assignment'));
 
             const result = onConfirm.mock.calls[0][0];
             expect(result.emailSubject).toBeUndefined();
-            expect(result.emailBody).toBeUndefined();
+            expect(result.emailNote).toBeUndefined();
         });
     });
 

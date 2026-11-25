@@ -1,3 +1,4 @@
+using DeliverDifferent.AgentAlerts.Rendering;
 using System.Collections.Concurrent;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
@@ -10,6 +11,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -302,7 +304,7 @@ public class NationwideJobRepository(
     }
 
     public async Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false,
-        string emailSubject = null, string emailBody = null, bool resend = false)
+        string emailSubject = null, string emailNote = null, bool resend = false)
     {
         var job = await Context.TucJobs
             .AsTracking()
@@ -403,7 +405,7 @@ public class NationwideJobRepository(
             }
 
             // The check above has no lock; the send re-checks under one, so a double-click still sends once.
-            var status = await SendAgentRequestMessageAsync(agentId, jobId, emailSubject, emailBody, resend);
+            var status = await SendAgentRequestMessageAsync(agentId, jobId, emailSubject, emailNote, resend);
             return preview with { Status = status };
         }
         catch (Exception ex)
@@ -424,7 +426,7 @@ public class NationwideJobRepository(
     /// <inheritdoc />
     public async Task<IReadOnlyList<BulkAssignmentResult>> AssignAgentToJobsAsync(int agentId,
         IReadOnlyList<int> jobIds, bool includeStopJobs = false,
-        string emailSubject = null, string emailBody = null, bool resend = false)
+        string emailSubject = null, string emailNote = null, bool resend = false)
     {
         var results = new List<BulkAssignmentResult>(jobIds.Count);
 
@@ -442,7 +444,7 @@ public class NationwideJobRepository(
                     continue;
                 }
 
-                var email = await AddAgentToJobAsync(agentId, jobId, includeStopJobs, emailSubject, emailBody, resend);
+                var email = await AddAgentToJobAsync(agentId, jobId, includeStopJobs, emailSubject, emailNote, resend);
                 results.Add(new BulkAssignmentResult(jobId, true, null, email.Status));
             }
             catch (Exception ex)
@@ -575,8 +577,43 @@ public class NationwideJobRepository(
             .Select(fc => fc.CarrierCode)
             .FirstOrDefaultAsync();
 
+    public async Task<AgentAlertEmail> ComposeAgentAlertAsync(int agentId, int jobId, string emailSubject = null,
+        string emailNote = null)
+    {
+        var setting = await Context.AgentAlertSettings.AsNoTracking().OrderBy(s => s.Id).FirstOrDefaultAsync();
+        var leg = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new { j.UcjbNumber, j.FromAirportId, j.ToAirportId })
+            .FirstOrDefaultAsync();
+        ArgumentNullException.ThrowIfNull(leg);
+
+        var alertType = AgentAlertTypes.Resolve(leg.UcjbNumber, leg.FromAirportId, leg.ToAirportId);
+        var inboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
+        var tokens = await new AgentAlertTokenBuilder(Context, _infoService)
+            .BuildAsync(jobId, agentId, inboundUrl, alertType);
+
+        var (savedSubject, savedBody) = alertType switch
+        {
+            AgentAlertType.Pickup => (setting?.PickupSubject, setting?.PickupBody),
+            AgentAlertType.DoorToDoor => (setting?.DoorToDoorSubject, setting?.DoorToDoorBody),
+            _ => (setting?.DeliverySubject, setting?.DeliveryBody),
+        };
+        var subject = FirstNonBlank(emailSubject, savedSubject) ?? AgentAlertDefaults.Subject(alertType);
+        var body = FirstNonBlank(savedBody) ?? AgentAlertDefaults.Body(alertType);
+
+        return new AgentAlertEmail(
+            alertType,
+            AgentAlertRenderer.RenderSubject(subject, tokens),
+            AgentAlertRenderer.RenderBody(body, tokens, emailNote),
+            FirstNonBlank(setting?.ReplyToEmail, Environment.GetEnvironmentVariable("ReplyToEmailAddress"))
+            ?? "support@deliverdifferent.com");
+    }
+
+    private static string FirstNonBlank(params string[] values) =>
+        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
     public async Task<AgentInboundEmailStatus> SendAgentRequestMessageAsync(int agentId, int jobId,
-        string emailSubject = null, string emailBody = null, bool resend = false)
+        string emailSubject = null, string emailNote = null, bool resend = false)
     {
         var agentEmail = await Context.TucAgents
             .Where(a => a.UcagId == agentId)
@@ -590,81 +627,9 @@ public class NationwideJobRepository(
             return AgentInboundEmailStatus.NoAgentEmail;
         }
 
-        var replyToAddress = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
-                             ?? "support@deliverdifferent.com";
-
         var staffId = _infoService.GetStaffId();
-
-        var jobData = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new
-            {
-                j.UcjbNumber,
-                j.ParentId,
-                j.FromAirportId,
-                j.ToAirportId,
-                DeliveryCompany = j.DeliveryAddressLine1,
-                DeliveryStreetNumber = j.DeliveryAddressLine3,
-                DeliveryStreetName = j.DeliveryAddressLine4,
-                DeliveryCity = j.DeliveryAddressLine6,
-                j.UcjbQty,
-                j.UcjbWeight,
-                DeliveryContactName = j.DeliverToContact,
-                DeliveryContactPhone = j.DeliverToPhone
-            })
-            .FirstOrDefaultAsync();
-        ArgumentNullException.ThrowIfNull(jobData);
-
-        // Flight legs are stored against the flight job, but the agent is usually assigned to a
-        // sibling (pickup/delivery) job under the same parent. Resolve the leg across the whole
-        // family so the flight tokens fill regardless of which family member was emailed.
-        // Final arrival leg = latest ETA, then latest leg number.
-        var parentId = jobData.ParentId ?? jobId;
-        var finalLeg = await Context.TucJobNationwides
-            .Where(n => Context.TucJobs
-                .Where(j => j.UcjbId == parentId || j.ParentId == parentId)
-                .Select(j => (int?)j.UcjbId)
-                .Contains(n.UcnwJobId))
-            .OrderByDescending(n => n.UcnwEta)
-            .ThenByDescending(n => n.UcnwLegNumber)
-            .Select(n => new { n.UcnwFlightNo, n.UcnwEta, n.DepartureAirportCity })
-            .FirstOrDefaultAsync();
-
-        var agentName = await GetAgentNameAsync(agentId);
-        var inboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
-
-        var weightUnit = _infoService.IsUsTenant() ? "lb" : "kg";
-
-        var tokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["AgentName"] = agentName ?? string.Empty,
-            ["JobNumber"] = jobData.UcjbNumber ?? string.Empty,
-            ["DeliveryCompany"] = jobData.DeliveryCompany ?? string.Empty,
-            ["DeliveryStreetNumber"] = jobData.DeliveryStreetNumber ?? string.Empty,
-            ["DeliveryStreetName"] = jobData.DeliveryStreetName ?? string.Empty,
-            ["DeliveryCity"] = jobData.DeliveryCity ?? string.Empty,
-            ["InboundUrl"] = inboundUrl,
-            ["FlightNumber"] = finalLeg?.UcnwFlightNo ?? string.Empty,
-            ["FlightETA"] = _infoService.FormatDateForTenant(finalLeg?.UcnwEta) ?? string.Empty,
-            ["FromSuburbCity"] = finalLeg?.DepartureAirportCity ?? string.Empty,
-            ["Quantity"] = jobData.UcjbQty?.ToString() ?? string.Empty,
-            ["Weight"] = jobData.UcjbWeight.HasValue
-                ? $"{jobData.UcjbWeight.Value} {weightUnit}"
-                : string.Empty,
-            ["DeliveryContactName"] = jobData.DeliveryContactName ?? string.Empty,
-            ["DeliveryContactPhone"] = jobData.DeliveryContactPhone ?? string.Empty
-        };
-
-        var subject = AgentEmailTemplates.Substitute(
-            string.IsNullOrWhiteSpace(emailSubject) ? AgentEmailTemplates.DefaultSubject : emailSubject, tokens);
-        var body = AgentEmailTemplates.Substitute(
-            string.IsNullOrWhiteSpace(emailBody) ? AgentEmailTemplates.DefaultBody : emailBody, tokens);
-
-        // The external mailer sends the body as HTML, so render the plain-text template into a
-        // branded, inline-styled fragment; otherwise the newlines collapse onto a single line.
-        var htmlBody = AgentEmailTemplates.RenderHtmlBody(body, inboundUrl);
-
-        var alertType = AgentAlertTypes.Resolve(jobData.UcjbNumber, jobData.FromAirportId, jobData.ToAirportId);
+        var email = await ComposeAgentAlertAsync(agentId, jobId, emailSubject, emailNote);
+        var (alertType, subject, htmlBody, replyToAddress) = email;
 
         // The duplicate check, the message and its log row commit together, so a re-assign or double-click sends
         // once and every sent alert has a log row. There is no unique index (legacy DB rules, and "Send again" adds

@@ -1,27 +1,29 @@
 /**
- * Agent inbound-email pre-flight + editable template (Mantine).
+ * Agent alert pre-flight + preview (Mantine).
  *
- * Shown before assigning an agent: an info/warning alert saying whether the inbound-agent
- * link will be emailed, and — when it will — editable Subject/Message fields that fall back to
- * the hardcoded server defaults. Edits are reported to the parent via `onChange`, which passes
- * them to the assign call so the dispatcher can tailor the email per-send.
+ * Shown before assigning an agent: whether the agent alert will be emailed, and — when it will — the email exactly
+ * as it will be sent (the tenant's template from Settings, every field filled for this job), an editable subject and
+ * an "Add a note" box whose text goes above the message. The body itself is not editable here (Settings owns it).
  *
- * Shared by the flight-agent confirmation dialog and the universal dispatch dialog's Agent
- * option. Render it keyed by `${agentId}-${jobId}` so a change of agent/job remounts it and
- * reseeds from that agent/job's defaults.
+ * Shared by the flight-agent confirmation dialog and the universal dispatch dialog's Agent option. Render it keyed by
+ * `${agentId}-${jobId}` so a change of agent/job remounts it.
  */
 
 import React, {useEffect, useState} from 'react';
 import {Alert, Box, Checkbox, Paper, Stack, Text, TextInput, Textarea} from '@mantine/core';
-import {useQuery} from '@tanstack/react-query';
+import {useDebouncedValue} from '@mantine/hooks';
+import {keepPreviousData, useQuery} from '@tanstack/react-query';
 import {getAgentInboundEmailPreview, type AgentAlertType} from '../../../../api/dispatchExecutorApi';
+import {EmailPreviewFrame} from './EmailPreviewFrame';
 import {sectionLabelProps, sectionPaperProps} from './styles';
 
 export interface AgentEmailState {
-    /** Whether assigning the agent will actually send the inbound-agent link email. */
+    /** Whether assigning the agent will actually send the agent alert. */
     willEmail: boolean;
-    subject: string;
-    body: string;
+    /** The dispatcher's subject, only when they changed it; otherwise undefined and each job gets its own. */
+    subject: string | undefined;
+    /** The dispatcher's plain-text note for this send, shown above the message. */
+    note: string;
     /** The agent already has this alert for this job and the dispatcher chose to send it again. */
     resend: boolean;
 }
@@ -35,39 +37,35 @@ const ALERT_LABEL: Record<AgentAlertType, string> = {
 interface AgentEmailFieldsProps {
     agentId: number;
     jobId: number;
-    /** Reports the current editable values plus whether an email will actually be sent. */
+    /** Reports the dispatcher's subject edit and note plus whether an email will actually be sent. */
     onChange: (state: AgentEmailState) => void;
 }
 
 export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobId, onChange}) => {
+    const [subjectEdit, setSubjectEdit] = useState<string | null>(null);
+    const [note, setNote] = useState('');
+    const [sendAgain, setSendAgain] = useState(false);
+    const [previewNote] = useDebouncedValue(note.trim(), 400);
+
     const {data} = useQuery({
-        queryKey: ['agentInboundEmailPreview', agentId, jobId],
-        queryFn: ({signal}) => getAgentInboundEmailPreview(agentId, jobId, {signal}),
+        queryKey: ['agentInboundEmailPreview', agentId, jobId, previewNote],
+        queryFn: ({signal}) => getAgentInboundEmailPreview(agentId, jobId, previewNote || undefined, {signal}),
         enabled: agentId > 0 && jobId > 0,
         staleTime: 30_000,
+        placeholderData: keepPreviousData,
     });
-
-    // Only the operator's edits are held in state; the server defaults are applied during
-    // render so the very first commit that shows the fields already carries them. Seeding
-    // in an effect instead would leave a commit where the template is still empty, which
-    // the parent would report upward (and could assign with).
-    const [subjectEdit, setSubjectEdit] = useState<string | null>(null);
-    const [bodyEdit, setBodyEdit] = useState<string | null>(null);
-    const [sendAgain, setSendAgain] = useState(false);
 
     const alreadySent = data?.status === 'AlreadySent';
     const resend = alreadySent && sendAgain;
     const willEmail = (data?.willEmail ?? false) || resend;
-    const alertLabel = data?.alertType ? ALERT_LABEL[data.alertType] : 'inbound-agent link';
-    // `??` not `||` — clearing a field must stay cleared rather than snap back to the default.
-    const subject = subjectEdit ?? data?.defaultSubject ?? '';
-    const body = bodyEdit ?? data?.defaultBody ?? '';
+    const alertLabel = data?.alertType ? ALERT_LABEL[data.alertType] : 'agent alert';
+    // `??` not `||` — clearing the field must stay cleared rather than snap back to the tenant's subject.
+    const subject = subjectEdit ?? data?.subject ?? '';
+    const editedSubject = subjectEdit === null ? undefined : subjectEdit;
 
-    // Report the current state upward whenever it changes so the parent can pass the edits
-    // (or the default seed) into the assign call.
     useEffect(() => {
-        onChange({willEmail, subject, body, resend});
-    }, [onChange, willEmail, subject, body, resend]);
+        onChange({willEmail, subject: editedSubject, note, resend});
+    }, [onChange, willEmail, editedSubject, note, resend]);
 
     if (!data) return null;
 
@@ -101,10 +99,10 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
     if (!willEmail) {
         const message =
             data.status === 'NoAgentEmail'
-                ? 'This agent has no email address on file — no inbound-agent link will be sent.'
+                ? 'This agent has no email address on file — no agent alert will be sent.'
                 : data.status === 'NoInboundUrl'
-                    ? "The inbound portal URL isn't configured — no inbound-agent link will be sent."
-                    : "The inbound-agent link couldn't be prepared — no link will be sent.";
+                    ? "The agent page address isn't set in Settings — no agent alert will be sent."
+                    : "The agent alert couldn't be prepared — none will be sent.";
         return (
             <Alert color="orange" variant="outline">
                 {message}
@@ -130,14 +128,14 @@ export const AgentEmailFields: React.FC<AgentEmailFieldsProps> = ({agentId, jobI
                             onChange={(e) => setSubjectEdit(e.currentTarget.value)}
                         />
                         <Textarea
-                            label="Message"
-                            minRows={8}
+                            label="Add a note"
+                            description="Shown above the message for this send only."
+                            minRows={2}
                             autosize
-                            value={body}
-                            onChange={(e) => setBodyEdit(e.currentTarget.value)}
-                            description="Tokens like [AgentName], [JobNumber] and [InboundUrl] are replaced with the job's details when the email is sent."
-                            inputWrapperOrder={['label', 'input', 'description', 'error']}
+                            value={note}
+                            onChange={(e) => setNote(e.currentTarget.value)}
                         />
+                        {data.html && <EmailPreviewFrame html={data.html} title="Agent email preview" />}
                     </Stack>
                 </Paper>
             </Box>
