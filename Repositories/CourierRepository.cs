@@ -756,7 +756,7 @@ public partial class CourierRepository(
                         || EF.Functions.Like(c.UccrName, searchPattern)
                         || EF.Functions.Like(c.UccrSurname, searchPattern)
                         || EF.Functions.Like(c.UccrVehicleModel, searchPattern)
-                        || EF.Functions.Like(c.VehiclePlateNnumber, searchPattern)
+                        || EF.Functions.Like(c.UccrReg, searchPattern)
                         || EF.Functions.Like(c.UccrEmail, searchPattern)
                         || EF.Functions.Like(c.PersonalMobile, searchPattern)
                         || EF.Functions.Like(c.UccrMobile, searchPattern)
