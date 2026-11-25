@@ -11,6 +11,8 @@ import {
 import {GlassDropdownRoot, glassClassNames} from '@deliver-different/glass';
 import {contrastRatio, getMd3Scheme} from './md3';
 import surfaceClasses from './surfaceDefaults.module.css';
+import {readFileSync} from 'fs';
+import * as path from 'path';
 import {dfrntPrimaryPalette, inkBluePalette} from './palettes';
 
 describe('dfrntTheme glass dropdowns', () => {
@@ -36,6 +38,14 @@ describe('dfrntTheme surface defaults', () => {
         const root = screen.getByTestId('surface');
         expect(root.style.backgroundColor).toBe('');
         expect(root).toHaveClass(surfaceClasses.surface);
+    });
+
+    // jsdom ignores cascade layers, so pin the order statement that ranks the default above
+    // Mantine's own Paper background and below unlayered component CSS.
+    it('declares its layer after mantine', () => {
+        const surfaceCss = readFileSync(path.resolve(__dirname, 'surfaceDefaults.module.css'), 'utf-8');
+        expect(surfaceCss).toMatch(/@layer\s+mantine\s*,\s*dd-defaults\s*;/);
+        expect(surfaceCss).toMatch(/@layer\s+dd-defaults\s*\{/);
     });
 
     it('still lets an inline background win over the default', () => {

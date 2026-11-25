@@ -264,10 +264,10 @@ export function createDfrntTheme(appearance: ThemeAppearance = STANDARD_APPEARAN
             // Cards/paper sit one tonal tier above the page in both schemes, plus a soft
             // shadow for a little lift. The tone is a layered class (surfaceDefaults.module.css),
             // never `styles.root`: Mantine renders theme `styles` inline, which would beat every
-            // consumer's CSS-module background (it hid the sticky-note fills).
+            // consumer's CSS-module background (it hid the sticky-note fills). Card renders
+            // through Paper, so only Paper carries the class.
             Card: {
                 defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
-                classNames: {root: surfaceClasses.surface},
             },
             Paper: {
                 defaultProps: {radius: tokens.radius.card, shadow: 'sm'},
