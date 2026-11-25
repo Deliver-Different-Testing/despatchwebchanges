@@ -34,16 +34,19 @@ describe('PwaUpdatePrompt', () => {
         expect(showPersistentToast).not.toHaveBeenCalled();
     });
 
-    it('offers a reload that activates the waiting service worker, and withdraws the offer on unmount', () => {
+    it('offers an update that activates the waiting service worker, and withdraws the offer on unmount', () => {
         const dismiss = vi.fn();
         showPersistentToast.mockReturnValue(dismiss);
         sw.needRefresh = true;
 
         const {unmount} = render(<PwaUpdatePrompt/>);
 
-        const [message, action] = showPersistentToast.mock.calls[0];
+        const [message, action, options] = showPersistentToast.mock.calls[0];
+        expect(options.title).toBe('Update available');
         expect(message).toContain('new version of DespatchWeb');
-        expect(action.label).toBe('Reload');
+        expect(message).toContain('save');
+        expect(action.label).toBe('Update now');
+        expect(action.busyLabel).toBe('Updating…');
         action.onClick();
         expect(sw.update).toHaveBeenCalledWith(true);
 

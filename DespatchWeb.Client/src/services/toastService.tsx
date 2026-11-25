@@ -13,15 +13,15 @@
 
 import React, {useMemo} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Button, Group, MantineProvider} from '@mantine/core';
+import {Button, Group, MantineProvider, Stack, Text} from '@mantine/core';
 import {Notifications, notifications} from '@mantine/notifications';
 import {createDfrntTheme, dfrntCssVariablesResolver} from '../theme/dfrntMantineTheme';
 import {toThemeAppearance} from '../theme/appearance';
 import {useAppearance} from '../hooks/useAppearance';
 import {ColorModeProvider, useColorMode} from '../hooks/useColorMode';
-import type {ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
+import type {PersistentToastOptions, ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
 
-export type {ShowToastFn, ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
+export type {PersistentToastOptions, ShowToastFn, ToastAction, ToastHandle, ToastService, ToastType} from './toastTypes';
 
 /** Own root, so it reads the colour mode and appearance itself rather than inheriting an island's. */
 const ToastHost: React.FC = () => {
@@ -103,18 +103,25 @@ class ToastServiceImpl implements ToastService {
         return (
             <Group component="span" display="inline-flex" gap="xs" wrap="nowrap">
                 {message}
-                <Button
-                    size="compact-xs"
-                    variant="white"
-                    onClick={() => {
-                        action.onClick();
-                        notifications.hide(id);
-                    }}
-                >
+                <Button size="compact-xs" variant="light" onClick={() => this.runAction(id, action)}>
                     {action.label}
                 </Button>
             </Group>
         );
+    }
+
+    private runAction(id: string, action: ToastAction): void {
+        action.onClick();
+        if (!action.busyLabel) {
+            notifications.hide(id);
+            return;
+        }
+        notifications.update({
+            id,
+            message: action.busyLabel,
+            loading: true,
+            autoClose: false,
+        });
     }
 
     showToast(message: string, type: ToastType, action?: ToastAction): void {
@@ -147,12 +154,22 @@ class ToastServiceImpl implements ToastService {
     }
 
     /** Stays until its action is used or the returned function is called. */
-    showPersistentToast(message: string, action: ToastAction): () => void {
+    showPersistentToast(message: string, action: ToastAction, options: PersistentToastOptions = {}): () => void {
         this.ensureMounted();
         const id = `toast-${++this.idCounter}`;
         notifications.show({
             id,
-            message: this.renderMessage(id, message, action),
+            title: options.title,
+            icon: options.icon,
+            // The action is the point of a persistent toast, so it gets its own row and full emphasis.
+            message: (
+                <Stack component="span" gap="sm" align="flex-start">
+                    <Text component="span" size="sm">{message}</Text>
+                    <Button size="xs" onClick={() => this.runAction(id, action)}>
+                        {action.label}
+                    </Button>
+                </Stack>
+            ),
             color: toastColor('info'),
             autoClose: false,
             closeButtonProps: CLOSE_BUTTON_PROPS,
@@ -169,7 +186,6 @@ class ToastServiceImpl implements ToastService {
             message,
             loading: true,
             autoClose: false,
-            withCloseButton: false,
         });
         this.logToConsole('loading', message);
         return {
