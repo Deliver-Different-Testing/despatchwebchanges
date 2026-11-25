@@ -139,7 +139,7 @@ export const DriverDetailsTab: React.FC = () => {
                     </InfoCard>
 
                     <InfoCard icon={<Icon lucide={Car}/>} title="Vehicle information">
-                        <InfoRow label="Number plate" value={driver.vehicleInformation.rego} />
+                        <InfoRow label="Number plate" value={driver.vehicleInformation.rego || '\u2014'} />
                         <InfoRow label="Model" value={driver.vehicleInformation.vehicleModel} />
                         <InfoRow label="Year" value={driver.vehicleInformation.vehicleYear ?? '\u2014'} />
                         <InfoRow label="Insurance" value={driver.vehicleInformation.vehicleInsurance || '\u2014'} />
