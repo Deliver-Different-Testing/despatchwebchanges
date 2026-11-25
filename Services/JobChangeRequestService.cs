@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -1161,9 +1162,7 @@ public sealed class JobChangeRequestService(
                 if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeLocal, out var booked))
                 {
-                    await q.ExecuteUpdateAsync(s => s
-                        .SetProperty(j => j.UcjbDate, booked.DateTime)
-                        .SetProperty(j => j.UcjbTime, booked.DateTime), ct);
+                    await q.UpdateBookedTimeAsync(booked.DateTime, ct);
                 }
 
                 break;

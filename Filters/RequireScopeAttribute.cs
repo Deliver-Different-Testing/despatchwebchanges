@@ -13,6 +13,9 @@ public enum ScopedRecord
     Job,
     BulkJob,
 
+    /// <summary>A recurring booking template (tucJobBooking.ucbkID), never a live job id.</summary>
+    Booking,
+
     Courier,
     Client,
 
@@ -61,6 +64,7 @@ public sealed class RequireScopeAttribute(ScopedRecord record, params string[] i
     private string NotFoundMessage => Record switch
     {
         ScopedRecord.BulkJob => "Bulk job not found. Refresh the list and try again.",
+        ScopedRecord.Booking => "Recurring booking not found. Refresh the list and try again.",
         ScopedRecord.Courier => "Courier not found. Refresh the list and try again.",
         ScopedRecord.Client or ScopedRecord.BookableClient => "Client not found. Refresh the list and try again.",
         _ => "Job not found. Refresh the list and try again."
@@ -70,6 +74,7 @@ public sealed class RequireScopeAttribute(ScopedRecord record, params string[] i
     {
         ScopedRecord.Job => db.IsJobVisibleAsync(id),
         ScopedRecord.BulkJob => db.TblBulkJobs.AnyAsync(b => b.BulkJobId == id),
+        ScopedRecord.Booking => db.TucJobBookings.AnyAsync(b => b.UcbkId == id),
         ScopedRecord.Courier => db.TucCouriers.AnyAsync(c => c.UccrId == id),
         ScopedRecord.Client => db.IsClientVisibleAsync(id),
         ScopedRecord.BookableClient => db.IsClientBookableAsync(id),

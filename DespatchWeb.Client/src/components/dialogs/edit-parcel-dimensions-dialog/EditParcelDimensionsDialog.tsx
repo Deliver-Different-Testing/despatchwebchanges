@@ -13,7 +13,7 @@ import {
 
 import {apiClient} from '../../../api/client';
 import classes from './EditParcelDimensionsDialog.module.css';
-import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions} from './types';
+import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions, ParcelDimensionsTarget} from './types';
 import {errorMessageOf} from '../../../utils/errorMessage';
 
 const MAX_NAME_LENGTH = 50;
@@ -153,6 +153,16 @@ function parcelsToGroups(parcels: ParcelDimensions[], isPerJob: boolean): Parcel
 const CUBIC_FACTOR_US = 0.000579;
 const CUBIC_FACTOR_NZ = 0.000001;
 
+const TARGET_ID_PARAM = {job: 'jobId', bulk: 'bulkJobId', booking: 'bookingId'} as const;
+
+function targetIdOf(target: ParcelDimensionsTarget): number {
+    switch (target.kind) {
+        case 'job': return target.jobId;
+        case 'bulk': return target.bulkJobId;
+        case 'booking': return target.bookingId;
+    }
+}
+
 function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string, isPerJob: boolean): ParcelDimensions[] {
     return groups.flatMap(g => {
         const length = g.length !== '' ? parseFloat(g.length) : undefined;
@@ -247,8 +257,7 @@ function DimensionCell({value, disabled, label, step = 0.01, onChange}: {
 export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProps> = ({
     open,
     parcels: initialParcels,
-    jobId,
-    bulkJobId,
+    target,
     jobNumber,
     isUsCustomer,
     jobWeight,
@@ -274,6 +283,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     const removeButtonRefs = useRef(new Map<string, HTMLButtonElement>());
     const barcodeInputRefs = useRef(new Map<string, HTMLInputElement>());
     const toggleButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+
+    // Primitive deps so a caller passing a fresh target object each render doesn't reset the form.
+    const targetKind = target.kind;
+    const targetId = targetIdOf(target);
 
     const dimensionUnit = isUsCustomer ? 'in' : 'cm';
     const weightUnit = isUsCustomer ? 'lbs' : 'kg';
@@ -303,29 +316,23 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setPendingRemoval(null);
         setListStatus({message: '', id: 0});
 
-        if (jobId) {
-            apiClient.get<boolean>('job/IsJobParent', {jobId}).then(setIsParentJob).catch(() => {});
-        } else if (bulkJobId) {
-            apiClient.get<boolean>('job/IsBulkJobParent', {bulkJobId}).then(setIsParentJob).catch(() => {});
-        } else {
-            console.error('[EditParcelDimensionsDialog] No JobId or BulkJobId was provided');
-            showToast("Couldn't load this job. Refresh and try again.", 'error');
+        if (targetKind === 'job') {
+            apiClient.get<boolean>('job/IsJobParent', {jobId: targetId}).then(setIsParentJob).catch(() => {});
+        } else if (targetKind === 'bulk') {
+            apiClient.get<boolean>('job/IsBulkJobParent', {bulkJobId: targetId}).then(setIsParentJob).catch(() => {});
         }
 
-        const itemTypeParams = jobId ? {jobId} : bulkJobId ? {bulkJobId} : null;
-        if (itemTypeParams) {
-            apiClient.get<Array<{itemId: number; name: string; quantity: number}>>('job/GetJobItemTypes', itemTypeParams)
-                .then(items => {
-                    const map = new Map<number, ParcelItemType[]>();
-                    for (const item of items) {
-                        if (!map.has(item.itemId)) map.set(item.itemId, []);
-                        map.get(item.itemId)!.push({name: item.name, quantity: item.quantity});
-                    }
-                    setItemTypesByItemId(map);
-                })
-                .catch(() => {});
-        }
-    }, [open, initialParcels, jobId, bulkJobId, showToast, jobWeight, calculateDimsOncePerJob]);
+        apiClient.get<Array<{itemId: number; name: string; quantity: number}>>('job/GetJobItemTypes', {[TARGET_ID_PARAM[targetKind]]: targetId})
+            .then(items => {
+                const map = new Map<number, ParcelItemType[]>();
+                for (const item of items) {
+                    if (!map.has(item.itemId)) map.set(item.itemId, []);
+                    map.get(item.itemId)!.push({name: item.name, quantity: item.quantity});
+                }
+                setItemTypesByItemId(map);
+            })
+            .catch(() => {});
+    }, [open, initialParcels, targetKind, targetId, jobWeight, calculateDimsOncePerJob]);
 
     const updateGroup = useCallback((id: string, field: keyof Pick<ParcelGroup, 'itemName' | 'length' | 'depth' | 'height' | 'weight' | 'cubic'>, value: string) => {
         setGroups(prev => prev.map(g => {
@@ -534,17 +541,26 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                 return;
             }
 
-            if (jobId) {
-                await apiClient.post('job/UpdateJobPackages', {jobId, parcels: updatedParcels, weight: parcelTotal > 0 ? parcelTotal : undefined, calculateDimsOncePerJob: isPerJob});
-            } else if (bulkJobId) {
-                await apiClient.post('job/UpdateBulkJobPackages', {bulkJobId, parcels: updatedParcels, calculateDimsOncePerJob: isPerJob});
-            } else {
-                console.error('[EditParcelDimensionsDialog] No JobId or BulkJobId was provided');
-                showToast("Couldn't load this job. Refresh and try again.", 'error');
-                return;
+            switch (target.kind) {
+                case 'job':
+                    await apiClient.post('job/UpdateJobPackages', {jobId: target.jobId, parcels: updatedParcels, weight: parcelTotal > 0 ? parcelTotal : undefined, calculateDimsOncePerJob: isPerJob});
+                    break;
+                case 'bulk':
+                    await apiClient.post('job/UpdateBulkJobPackages', {bulkJobId: target.bulkJobId, parcels: updatedParcels, calculateDimsOncePerJob: isPerJob});
+                    break;
+                case 'booking':
+                    await apiClient.post('job/UpdateRecurringJobPackages', {bookingId: target.bookingId, parcels: updatedParcels, calculateDimsOncePerJob: isPerJob});
+                    break;
+                default: {
+                    const unhandled: never = target;
+                    throw new Error(`Unhandled parcel target ${JSON.stringify(unhandled)}`);
+                }
             }
 
-            showToast(`Updated ${totalParcels} ${totalParcels === 1 ? 'parcel' : 'parcels'}`, 'success');
+            const updated = `Updated ${totalParcels} ${totalParcels === 1 ? 'parcel' : 'parcels'}`;
+            showToast(target.kind === 'booking'
+                ? `${updated}. Applies to jobs created from now on; jobs already created keep their parcels.`
+                : updated, 'success');
             const result: EditParcelDimensionsDialogResult = {parcels: updatedParcels, totalWeight: parcelTotal, calculateDimsOncePerJob: isPerJob};
             onSubmit(result);
         } catch (error: unknown) {
@@ -552,7 +568,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         } finally {
             setIsLoading(false);
         }
-    }, [groups, dimensionUnit, jobId, bulkJobId, partnerMode, totalParcels, parcelTotal, isPerJob, showToast, onSubmit]);
+    }, [groups, dimensionUnit, target, partnerMode, totalParcels, parcelTotal, isPerJob, showToast, onSubmit]);
 
     const saveBlockedReason = hasEmptyWeights
         ? 'All parcels must have a weight greater than 0'

@@ -1138,10 +1138,16 @@ export function useJobActions({
         // forward them to the locked confirmation dialog so the user adds a
         // reason and the partner can approve. Bulk jobs never have a partner
         // pairing, so they keep the direct save path.
-        const partnerMode = Boolean(j.isPartnerJob && !j.isBulkJob && onRequestPartnerChange);
+        // On the Recurring Jobs page j.id is a booking id, numbered independently of live jobs.
+        const isBooking = Boolean(j.preBook || isRecurringJob);
+        const partnerMode = Boolean(j.isPartnerJob && !j.isBulkJob && !isBooking && onRequestPartnerChange);
+        const target = isBooking
+            ? {kind: 'booking' as const, bookingId: j.id}
+            : j.isBulkJob
+                ? {kind: 'bulk' as const, bulkJobId: j.id}
+                : {kind: 'job' as const, jobId: j.id};
         const result = await (await loadDialog('EditParcelDimensions')).showEditParcelDimensionsDialog({
-            jobId: j.isBulkJob ? undefined : j.id,
-            bulkJobId: j.isBulkJob ? j.id : undefined,
+            target,
             jobNumber: j.jobNo,
             parcels: j.parcelDimensions || [],
             isUsCustomer: isUsCustomer,
@@ -1161,7 +1167,7 @@ export function useJobActions({
             return;
         }
         await Promise.all([refreshAndNotify(), invalidateAllJobDetails()]);
-        if (!j.isBulkJob) {
+        if (target.kind === 'job') {
             const jobForRate = j.rootParentId
                 ? (relatedJobs.find(rj => rj.id === j.rootParentId) ?? j)
                 : j;
@@ -1169,7 +1175,7 @@ export function useJobActions({
                 await checkForRateChange(jobForRate);
             }
         }
-    }, [isUsCustomer, showToast, refreshAndNotify, checkForRateChange, invalidateAllJobDetails, relatedJobs, onRequestPartnerChange]);
+    }, [isUsCustomer, isRecurringJob, showToast, refreshAndNotify, checkForRateChange, invalidateAllJobDetails, relatedJobs, onRequestPartnerChange]);
 
     const handleEditRefA = useCallback(() => {
         const j = jobRef.current;

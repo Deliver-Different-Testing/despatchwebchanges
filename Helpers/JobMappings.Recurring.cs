@@ -183,7 +183,9 @@ public static partial class JobMappings
                             Height = p.Height,
                             Depth = p.Depth,
                             Length = p.Length,
-                            Cubic = p.Cubic
+                            Weight = p.Weight,
+                            Cubic = p.Cubic,
+                            Barcode = p.Barcode
                         })
                         .ToList()
                     : j.BookingParent.TucJobBookingItemBookings.Select(p => new ParcelDimensions
@@ -193,7 +195,9 @@ public static partial class JobMappings
                             Height = p.Height,
                             Depth = p.Depth,
                             Length = p.Length,
-                            Cubic = p.Cubic
+                            Weight = p.Weight,
+                            Cubic = p.Cubic,
+                            Barcode = p.Barcode
                         })
                         .ToList(),
 

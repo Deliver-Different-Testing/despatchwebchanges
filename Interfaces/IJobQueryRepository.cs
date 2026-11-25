@@ -94,7 +94,7 @@ public interface IJobQueryRepository
 
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
-    Task<JobGroupViewModel> GetJobByIdAsync(int jobId);
+    Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default);
     Task<JobViewModel?> GetSingleJobById(int jobId);
     Task<JobViewModel?> GetJobWithoutMarkingReadAsync(int jobId);
 
@@ -131,7 +131,7 @@ public interface IJobQueryRepository
     Task<bool> IsJobArchived(int jobId);
 
     Task<ArchivedCourierChangeEligibility?> GetArchivedCourierChangeEligibilityAsync(int jobId);
-    Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
+    Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId, CancellationToken cancellationToken = default);
 
     /// <summary>Whether the caller's scope can see this live or archived job.</summary>
     Task<bool> IsJobVisibleAsync(int jobId);
@@ -171,5 +171,5 @@ public interface IJobQueryRepository
     Task<List<Suggestion>> GetActivePartnerOptionsAsync();
     Task<bool> IsPartnerJobAsync(int jobId);
     Task<bool> IsOutboundPartnerJobAsync(int jobId);
-    Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId);
+    Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId, int? bookingId = null);
 }

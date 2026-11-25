@@ -4,6 +4,7 @@ using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Exceptions;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -814,7 +815,7 @@ public partial class JobRepository(
             return;
         }
 
-        var jobDateTime = job.UcjbDate.Add(job.UcjbTime.Value.TimeOfDay);
+        var jobDateTime = job.UcjbDate.CombineWithTime(job.UcjbTime);
         var windowValue = job.UcjbLatePick ?? time;
 
         if (!windowValue.HasValue)
@@ -875,7 +876,7 @@ public partial class JobRepository(
             return;
         }
 
-        var jobDateTime = job.UcjbDate.Add(value: job.UcjbTime.Value.TimeOfDay);
+        var jobDateTime = job.UcjbDate.CombineWithTime(job.UcjbTime);
         var windowValue = job.UcjbLateDel ?? time;
 
         if (!windowValue.HasValue)
@@ -1994,6 +1995,9 @@ public partial class JobRepository(
                     .OrderBy(i => i.ItemId)
                     .ToListAsync();
                 var existing = InDisplayOrder(scoped.Where(i => i.ChildJobId == childJobId)).ToList();
+                var changeNote = PackageChangeNoteText(existing.Where(IsActiveLine)
+                    .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                    .ToList(), parcels);
 
                 var nextItemId = (await Context.TucJobItems
                     .Where(i => i.JobId == effectiveJobId)
@@ -2055,6 +2059,8 @@ public partial class JobRepository(
                 var existingSet = existing.ToHashSet();
                 foreach (var (line, sortOrder) in sortOrders.Where(s => !existingSet.Contains(s.Line)))
                     line.SortOrder = sortOrder;
+                if (changeNote != null)
+                    await SaveNoteAsync(jobId, changeNote, saveChanges: false);
                 await Context.SaveChangesAsync();
                 var existingSortOrders = sortOrders
                     .Where(s => existingSet.Contains(s.Line) && s.Line.SortOrder != s.SortOrder).ToList();
@@ -2182,6 +2188,12 @@ public partial class JobRepository(
             {
                 await using var transaction = await Context.Database.BeginTransactionAsync();
 
+                var before = await Context.TblBulkJobItems
+                    .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                    .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                    .ToListAsync();
+                var changeNote = PackageChangeNoteText(before, parcels);
+
                 await Context.TblBulkJobItems
                     .Where(i => i.JobId == effectiveJobId &&
                                 (childJobId == null || i.ChildJobId == childJobId))
@@ -2213,6 +2225,9 @@ public partial class JobRepository(
                     await Context.TblBulkJobItems.AddRangeAsync(newItems);
                     await Context.SaveChangesAsync();
                 }
+
+                if (changeNote != null)
+                    await SaveMultipleBulkNotesAsync([bulkJobId], changeNote);
 
                 var parentLines = Context.TblBulkJobItems
                     .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
@@ -3059,7 +3074,7 @@ public partial class JobRepository(
             var allJobs = await Context.TblBulkJobs
                 .Where(BulkJobFamily.MemberOf(familyRootId))
                 .Select(JobMappings.BulkJobMapping)
-                .TagWith($"GetBulkJobDetail - Family {familyRootId}")
+                .TagWith("GetBulkJobDetail - Family")
                 .ToListAsync();
 
             var mainBulkJob = allJobs.FirstOrDefault(j => j.Id == bulkJobId);
@@ -4217,21 +4232,23 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobId">The job ID to retrieve.</param>
     /// <returns>Dispatch job view model with full details including addresses, courier, and status.</returns>
-    public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId)
+    public async Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId,
+        CancellationToken cancellationToken = default)
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
         var activeJob = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
-            .FirstOrDefaultAsync();
+            .TagWith("DispatchJobDetail - Live")
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (activeJob != null)
         {
             var archivedStatus = await Context.TblJobs
                 .Where(j => j.JobId == jobId)
                 .Select(j => j.Archived ?? false)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
 
             activeJob.IsArchived = archivedStatus;
             if (Context.CurrentIsNetworkPartner)
@@ -4414,13 +4431,27 @@ public partial class JobRepository(
             .Select(j => j.ParentId.HasValue || j.BulkParentId.HasValue)
             .FirstOrDefaultAsync();
 
-    public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId)
+    public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId, int? bookingId = null)
     {
         if (bulkJobId.HasValue)
         {
             var id = bulkJobId.Value;
             return await Context.TblBulkJobItemTypes
                 .Where(jit => jit.JobId == id)
+                .Select(jit => new JobItemTypeDto
+                {
+                    ItemId = jit.ItemId,
+                    Name = jit.ItemType.Name,
+                    Quantity = jit.Quantity
+                })
+                .ToListAsync();
+        }
+
+        if (bookingId.HasValue)
+        {
+            var effectiveBookingId = await Context.GetEffectiveJobBookingIdAsync(bookingId.Value);
+            return await Context.TucJobBookingItemTypes
+                .Where(jit => jit.BookingId == effectiveBookingId)
                 .Select(jit => new JobItemTypeDto
                 {
                     ItemId = jit.ItemId,
@@ -4455,16 +4486,7 @@ public partial class JobRepository(
                 Quantity = jit.Quantity
             });
 
-        var booking = Context.TucJobBookingItemTypes
-            .Where(jit => jit.BookingId == jid)
-            .Select(jit => new JobItemTypeDto
-            {
-                ItemId = jit.ItemId,
-                Name = jit.ItemType.Name,
-                Quantity = jit.Quantity
-            });
-
-        return await active.Concat(archive).Concat(booking).ToListAsync();
+        return await active.Concat(archive).ToListAsync();
     }
 
     /// <summary>
@@ -4472,15 +4494,19 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobId">The job ID to retrieve.</param>
     /// <returns>Job group containing the job and related jobs.</returns>
-    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId)
+    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default)
     {
         try
         {
             _ = MarkJobAsReadAsync(jobId);
 
-            return await LoadJobGroupAsync(jobId);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var group = await LoadJobGroupAsync(jobId, cancellationToken);
+            Log.Information("JobDetail {JobId} (family of {FamilySize}) loaded in {ElapsedMs}ms",
+                jobId, 1 + (group?.RelatedJobs?.Count ?? 0), stopwatch.ElapsedMilliseconds);
+            return group;
         }
-        catch (Exception e)
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested)
         {
             Log.Error(e, "Error occurred getting job {JobId}. Please see exception", jobId);
             throw;
@@ -4494,9 +4520,10 @@ public partial class JobRepository(
     public async Task<JobViewModel> GetJobWithoutMarkingReadAsync(int jobId) =>
         (await LoadJobGroupAsync(jobId)).Job;
 
-    private async Task<JobGroupViewModel> LoadJobGroupAsync(int jobId)
+    private async Task<JobGroupViewModel> LoadJobGroupAsync(int jobId, CancellationToken cancellationToken = default)
     {
-        var result = await GetLiveJobByIdAsync(jobId) ?? await GetArchivedJobByIdAsync(jobId);
+        var result = await GetLiveJobByIdAsync(jobId, cancellationToken)
+                     ?? await GetArchivedJobByIdAsync(jobId, cancellationToken);
 
         // A network partner sees their pay in place of the tenant's charge, on every job in the
         // group. Done here, not in the mapping, so the tenant's figure never reaches the client.
@@ -5832,6 +5859,12 @@ public partial class JobRepository(
         {
             await using var transaction = await Context.Database.BeginTransactionAsync();
 
+            var before = await Context.TucJobItemsArchives
+                .Where(i => i.JobId == effectiveJobId && i.ChildJobId == childJobId)
+                .Select(i => new PackageChangeNote.Line(i.Notes, i.Length, i.Depth, i.Height, i.Weight, i.Items))
+                .ToListAsync();
+            var changeNote = PackageChangeNoteText(before, parcels);
+
             await Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId &&
                             (childJobId == null || i.ChildJobId == childJobId))
@@ -5861,8 +5894,11 @@ public partial class JobRepository(
                 }).ToList();
 
                 await Context.TucJobItemsArchives.AddRangeAsync(newItems);
-                await Context.SaveChangesAsync();
             }
+
+            if (changeNote != null)
+                await SaveNoteToMultipleArchivedJobsAsync([jobId], changeNote);
+            await Context.SaveChangesAsync();
 
             var parentLines = Context.TucJobItemsArchives
                 .Where(i => i.JobId == effectiveJobId && i.ChildJobId == null)
@@ -6247,7 +6283,7 @@ public partial class JobRepository(
         var childIds = await Context.TucJobs
             .Where(LiveJobFamily.ChildOf(Context, jobId))
             .Select(j => j.UcjbId)
-            .TagWith($"GetJobWithChildren - Get children for job {jobId}")
+            .TagWith("GetJobWithChildren - Get children")
             .ToListAsync();
 
         childIds.Add(jobId);
@@ -6334,7 +6370,7 @@ public partial class JobRepository(
         var childIds = await Context.TucJobArchives
             .Where(LiveJobFamily.ArchivedChildOf(Context, jobId))
             .Select(j => j.UcjbId)
-            .TagWith($"GetArchivedJobWithChildren - Get children for archived job {jobId}")
+            .TagWith("GetArchivedJobWithChildren - Get children")
             .ToListAsync();
 
         childIds.Add(jobId);
@@ -6781,14 +6817,13 @@ public partial class JobRepository(
 
             await using var markReadContext = await _contextFactory.CreateDbContextAsync();
 
-            var jobExists = await markReadContext.TucJobs.AnyAsync(j => j.UcjbId == jobId);
-            if (!jobExists)
-            {
-                return;
-            }
-
-            var alreadyTracked = await markReadContext.TucJobReadTrackers.AnyAsync(t => t.JobId == jobId);
-            if (alreadyTracked)
+            // One round trip: null when there is no live job, true when it is already tracked.
+            var alreadyTracked = await markReadContext.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => (bool?)(j.TucJobReadTracker != null))
+                .TagWith("MarkJobAsRead - State")
+                .FirstOrDefaultAsync();
+            if (alreadyTracked != false)
             {
                 return;
             }
@@ -6809,13 +6844,13 @@ public partial class JobRepository(
         }
     }
 
-    private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)
+    private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId, CancellationToken cancellationToken)
     {
         var mainJobInfo = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new { j.UcjbId, FamilyRootId = j.ParentId ?? j.UcjbId })
             .TagWith("GetLiveJob - Family Root Lookup")
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (mainJobInfo == null)
         {
@@ -6828,8 +6863,8 @@ public partial class JobRepository(
         var allJobsInFamily = await Context.TucJobs
             .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
             .Select(JobMappings.JobMappingCore(isUsTenant))
-            .TagWith($"GetLiveJob - Complete Family {familyRootId}")
-            .ToListAsync();
+            .TagWith("GetLiveJob - Complete Family")
+            .ToListAsync(cancellationToken);
 
         var mainJob = allJobsInFamily.FirstOrDefault(j => j.Id == jobId);
         ArgumentNullException.ThrowIfNull(mainJob);
@@ -6848,13 +6883,13 @@ public partial class JobRepository(
         };
     }
 
-    private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
+    private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId, CancellationToken cancellationToken)
     {
         var familyRootId = await Context.TucJobArchives
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.ParentId ?? j.UcjbId)
             .TagWith("GetArchivedJob - Family Root")
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (familyRootId == 0)
         {
@@ -6864,8 +6899,8 @@ public partial class JobRepository(
         var allJobsInFamily = await Context.TucJobArchives
             .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
             .Select(JobMappings.JobArchiveMapping)
-            .TagWith($"GetArchivedJob - Family {familyRootId}")
-            .ToListAsync();
+            .TagWith("GetArchivedJob - Family")
+            .ToListAsync(cancellationToken);
 
         if (allJobsInFamily.Count == 0)
         {

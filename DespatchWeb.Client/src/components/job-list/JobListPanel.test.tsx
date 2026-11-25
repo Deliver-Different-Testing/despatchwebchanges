@@ -1786,3 +1786,66 @@ describe('JobListPanel', () => {
         });
     });
 });
+
+describe('JobListPanel job search notices', () => {
+    beforeEach(() => localStorage.clear());
+
+    function noticeFetchConfig(result: Partial<JobSearchResult>): FetchConfig {
+        const queryKeyId = fetchKeySeq++;
+        return {
+            fetchFn: vi.fn().mockResolvedValue({jobs: [], totalCount: 0, hasMore: false, ...result} as JobSearchResult),
+            queryKeyFn: (params: JobListSearchParams) => ['jobListPanelNoticeTest', queryKeyId, params] as const,
+            initialParams: {page: 0, pageSize: 50, job: 'E3739'},
+        };
+    }
+
+    type Notice = NonNullable<JobSearchResult['searchNotice']>;
+    const notice = (overrides: Partial<Notice>): Notice => ({
+        jobTerm: 'E3739',
+        matchMode: null,
+        outsideWindowCount: null,
+        outsideWindowRange: null,
+        totalIsCapped: false,
+        searchTooBroad: false,
+        ...overrides,
+    });
+
+    it('names a prefix match and re-searches anywhere in the number on request', async () => {
+        const fetchConfig = noticeFetchConfig({
+            jobs: [createMockDispatchJob({id: 1, jobNo: 'E3739FHS'})],
+            totalCount: 1,
+            searchNotice: notice({matchMode: 'prefix'}),
+        });
+        renderWithMantineProviders(<JobListPanel {...createDefaultProps({appPage: AppPage.JobSearch, fetchConfig})}/>);
+
+        expect(await screen.findByText('Job numbers starting with E3739')).toBeInTheDocument();
+        await setupUser().click(screen.getByRole('button', {name: 'Search anywhere in job number'}));
+
+        await waitFor(() => expect(fetchConfig.fetchFn).toHaveBeenLastCalledWith(
+            expect.objectContaining({job: 'E3739', forceContains: true, page: 0}), expect.anything()));
+    });
+
+    it('offers to widen the dates to the matches found outside them', async () => {
+        const onWidenDates = vi.fn();
+        const range = {from: dayjs('2023-06-01'), to: dayjs('2023-06-20')};
+        const fetchConfig = noticeFetchConfig({
+            searchNotice: notice({matchMode: 'contains', outsideWindowCount: 3, outsideWindowRange: range}),
+        });
+        renderWithMantineProviders(
+            <JobListPanel {...createDefaultProps({appPage: AppPage.JobSearch, fetchConfig, onWidenDates})}/>,
+        );
+
+        expect(await screen.findByText('No jobs in these dates')).toBeInTheDocument();
+        expect(screen.getByText('3 jobs start with E3739 outside the dates you searched.')).toBeInTheDocument();
+        await setupUser().click(screen.getByRole('button', {name: 'Include those dates'}));
+        expect(onWidenDates).toHaveBeenCalledWith(range);
+    });
+
+    it('explains a search that was too broad to run', async () => {
+        const fetchConfig = noticeFetchConfig({searchNotice: notice({searchTooBroad: true})});
+        renderWithMantineProviders(<JobListPanel {...createDefaultProps({appPage: AppPage.JobSearch, fetchConfig})}/>);
+
+        expect(await screen.findByText('Search too broad')).toBeInTheDocument();
+        expect(screen.queryByTestId('job-search-match-bar')).not.toBeInTheDocument();
+    });
+});

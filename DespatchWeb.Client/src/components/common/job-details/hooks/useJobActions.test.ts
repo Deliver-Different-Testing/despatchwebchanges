@@ -1632,7 +1632,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         // Dialog must be opened in partner mode so it skips its own POST.
         expect(showDialogMock).toHaveBeenCalledWith(expect.objectContaining({
             partnerMode: true,
-            jobId: job.id,
+            target: {kind: 'job', jobId: job.id},
         }));
 
         // Captured value is JSON-serialised into the Packages payload shape.
@@ -1696,9 +1696,35 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
         expect(showDialogMock).toHaveBeenCalledWith(expect.objectContaining({
             partnerMode: false,
-            bulkJobId: job.id,
+            target: {kind: 'bulk', bulkJobId: job.id},
         }));
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+
+        delete testDialogs.EditParcelDimensions;
+    });
+
+    it('handleEditDimensions on a recurring booking targets the booking, not a live job with the same id', async () => {
+        const showDialogMock = vi.fn().mockResolvedValue({
+            parcels: [{itemName: 'Box', weight: 5, dimensions: ''}],
+            totalWeight: 5,
+        });
+        testDialogs.EditParcelDimensions = {
+            setToastService: vi.fn(),
+            showEditParcelDimensionsDialog: showDialogMock,
+        };
+
+        const job = createMockJob({preBook: true, isPartnerJob: false, parcelDimensions: []});
+        const {result, mockRefreshAndNotify} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleEditDimensions();
+        });
+
+        expect(showDialogMock).toHaveBeenCalledWith(expect.objectContaining({
+            partnerMode: false,
+            target: {kind: 'booking', bookingId: job.id},
+        }));
+        expect(mockRefreshAndNotify).toHaveBeenCalled();
 
         delete testDialogs.EditParcelDimensions;
     });

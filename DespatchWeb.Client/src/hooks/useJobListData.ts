@@ -16,6 +16,7 @@ import type {
     DispatchJob,
     JobListSearchParams,
     JobListStatusCounts,
+    JobSearchNotice,
     JobSearchResult,
 } from '../types/dispatchJob';
 
@@ -23,6 +24,8 @@ export interface UseJobListDataResult {
     jobs: DispatchJob[];
     totalCount: number;
     statusCounts: JobListStatusCounts | null;
+    /** Job search: what the first page says about how the search matched. */
+    searchNotice: JobSearchNotice | null;
     isLoading: boolean;
     isFetching: boolean;
     hasMore: boolean;
@@ -38,6 +41,7 @@ const emptyResult: UseJobListDataResult = {
     jobs: [],
     totalCount: 0,
     statusCounts: null,
+    searchNotice: null,
     isLoading: false,
     isFetching: false,
     hasMore: false,
@@ -100,6 +104,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         lastStatusCountsRef.current = pageStatusCounts;
     }
     const statusCounts = pageStatusCounts ?? lastStatusCountsRef.current;
+    const searchNotice = data?.pages[0]?.searchNotice ?? null;
 
     const refresh = useCallback(() => {
         if (!fetchConfig) return;
@@ -139,6 +144,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         jobs,
         totalCount,
         statusCounts,
+        searchNotice,
         isLoading,
         isFetching,
         hasMore: hasNextPage ?? false,

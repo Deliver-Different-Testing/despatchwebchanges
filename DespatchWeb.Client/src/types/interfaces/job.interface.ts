@@ -630,6 +630,8 @@ export interface InternalStatus extends ISuggestion {
 export interface IDispatchJob {
     // Core identifiers
     selected?: boolean;
+    /** Job search: an exact job-number match dated outside the searched window. */
+    outsideDateRange?: boolean;
     showCourierSearch: boolean;
     id: number;
     jobNo: string;
@@ -762,6 +764,8 @@ export interface IDispatchJob {
 export interface IDispatchJobDto {
     // Core identifiers
     selected?: boolean;
+    /** Job search: an exact job-number match dated outside the searched window. */
+    outsideDateRange?: boolean;
     showCourierSearch: boolean;
     id: number;
     jobNo: string;
@@ -909,7 +913,16 @@ export interface IJobSearchResultDto {
     hasMore: boolean;
     mapItems?: IDispatchMapItem[];
     statusCounts?: IJobListStatusCounts;
+    matchMode?: JobNumberMatchMode | null;
+    outsideWindowCount?: number | null;
+    outsideWindowFrom?: string | null;
+    outsideWindowTo?: string | null;
+    totalIsCapped?: boolean;
+    searchTooBroad?: boolean;
 }
+
+/** How a job-number search matched the typed term. */
+export type JobNumberMatchMode = 'exact' | 'prefix' | 'contains';
 
 /**
  * The job list's stats header, counted server-side over every match — before any category filter,

@@ -9,7 +9,7 @@ namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
 /// Tests for the BookedTime edit path in JobRepository.EditOperations.
-/// Verifies that editing a job's booked date/time updates both UcjbDate and UcjbTime
+/// Verifies that editing a job's booked date/time writes the date to UcjbDate and the time to UcjbTime
 /// for live jobs (via ExecuteUpdateAsync) and archived jobs (via entity tracking).
 /// </summary>
 public class JobRepositoryEditBookedTimeTests : IAsyncDisposable
@@ -77,7 +77,7 @@ public class JobRepositoryEditBookedTimeTests : IAsyncDisposable
         await using var verifyContext = CreateContext();
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 1, cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(newDateTime.DateTime, updatedJob.UcjbDate); // UcjbDate should be updated to the new booked date/time
+        Assert.Equal(newDateTime.Date, updatedJob.UcjbDate); // UcjbDate holds only the date (#1023)
         Assert.Equal(newDateTime.DateTime, updatedJob.UcjbTime); // UcjbTime should also be updated to match the new booked date/time
     }
 
@@ -145,7 +145,7 @@ public class JobRepositoryEditBookedTimeTests : IAsyncDisposable
         await using var verifyContext = CreateContext();
         var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 3, cancellationToken: TestContext.Current.CancellationToken);
 
-        Assert.Equal(newDateTime.DateTime, updatedArchive.UcjbDate); // archived UcjbDate should be updated to the new booked date/time
+        Assert.Equal(newDateTime.Date, updatedArchive.UcjbDate); // UcjbDate holds only the date (#1023)
         Assert.Equal(newDateTime.DateTime, updatedArchive.UcjbTime); // archived UcjbTime should also be updated to match the new booked date/time
     }
 
@@ -183,4 +183,75 @@ public class JobRepositoryEditBookedTimeTests : IAsyncDisposable
         Assert.Equal(20, updatedArchive.UcjbTime!.Value.Minute);
     }
 
+    [Fact]
+    public async Task UpdateJobAsync_BookedTime_TimeOnlyEditOfABookingPageJob_KeepsTheDateAndTheTimeAnchor()
+    {
+        // #1023: the booking page stores the time on 1899-12-30; a time-only edit must not touch UcjbDate.
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 5,
+                UcjbNumber = "E893BIO",
+                UcjbDate = new DateTime(2026, 11, 11),
+                UcjbTime = new DateTime(1899, 12, 30, 14, 30, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await CreateRepository().UpdateJobAsync(5, JobProperty.BookedTime,
+            new DateTimeOffset(2026, 11, 11, 15, 30, 0, TimeSpan.FromHours(-5)).ToString("O"));
+
+        await using var verifyContext = CreateContext();
+        var job = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 5, TestContext.Current.CancellationToken);
+        Assert.Equal(new DateTime(2026, 11, 11), job.UcjbDate);
+        Assert.Equal(new DateTime(1899, 12, 30, 15, 30, 0), job.UcjbTime);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_BookedTime_Unchanged_IsHandledWithoutAWrite()
+    {
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(new TucJob
+            {
+                UcjbId = 6,
+                UcjbNumber = "JOB-006",
+                UcjbDate = new DateTime(2026, 11, 11),
+                UcjbTime = new DateTime(1899, 12, 30, 14, 30, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await CreateRepository().UpdateJobAsync(6, JobProperty.BookedTime,
+            new DateTimeOffset(2026, 11, 11, 14, 30, 0, TimeSpan.Zero).ToString("O"));
+
+        await using var verifyContext = CreateContext();
+        var job = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 6, TestContext.Current.CancellationToken);
+        Assert.Equal(new DateTime(1899, 12, 30, 14, 30, 0), job.UcjbTime);
+    }
+
+    [Fact]
+    public async Task UpdateJobAsync_BookedTime_ArchivedBookingPageJob_KeepsTheDateAndTheTimeAnchor()
+    {
+        await using (var context = CreateContext())
+        {
+            context.TucJobArchives.Add(new TucJobArchive
+            {
+                UcjbId = 7,
+                UcjbNumber = "JOB-007",
+                UcjbDate = new DateTime(2026, 11, 11),
+                UcjbTime = new DateTime(1899, 12, 30, 14, 30, 0)
+            });
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await CreateRepository().UpdateJobAsync(7, JobProperty.BookedTime,
+            new DateTimeOffset(2026, 11, 11, 15, 30, 0, TimeSpan.Zero).ToString("O"));
+
+        await using var verifyContext = CreateContext();
+        var job = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 7, TestContext.Current.CancellationToken);
+        Assert.Equal(new DateTime(2026, 11, 11), job.UcjbDate);
+        Assert.Equal(new DateTime(1899, 12, 30, 15, 30, 0), job.UcjbTime);
+    }
 }

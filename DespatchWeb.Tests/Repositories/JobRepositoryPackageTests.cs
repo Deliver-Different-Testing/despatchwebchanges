@@ -1396,6 +1396,96 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         Assert.Equal(["B980-1", "B980-3", "B980-2"], lines.Select(i => i.Barcode));
     }
 
+    // ── #955: the edit leaves a note naming the packages ─────────────
+
+    private static List<ParcelDimensions> BananaBoxes() =>
+    [
+        new() { ItemName = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 },
+        new() { ItemName = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 }
+    ];
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ChangedPackages_WritesOneInternalNoteNamingThem()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(955, "J955"));
+        ctx.TucJobItems.Add(new TucJobItem
+            { JobId = 955, ItemId = 1, Items = 2, Notes = "Pallet", Length = 53, Depth = 39, Height = 24, Weight = 8 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(955, BananaBoxes());
+
+        await using var verify = CreateContext();
+        var note = Assert.Single(await verify.TucNotes.Where(n => n.JobId == 955)
+            .ToListAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Packages updated from 2 × Pallet 53 x 39 x 24 cm, 8 kg to 2 × Banana box 53 x 39 x 24 cm, 8 kg",
+            note.NoteText);
+        Assert.Equal((int)NoteType.InternalNote, note.NoteTypeId);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_UnchangedPackages_WritesNoNote()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(956, "J956"));
+        ctx.TucJobItems.AddRange(
+            new TucJobItem { JobId = 956, ItemId = 1, Items = 1, Notes = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 },
+            new TucJobItem { JobId = 956, ItemId = 2, Items = 1, Notes = "Banana box", Length = 53, Depth = 39, Height = 24, Weight = 8 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(956, BananaBoxes());
+
+        await using var verify = CreateContext();
+        Assert.False(await verify.TucNotes.AnyAsync(n => n.JobId == 956, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_UsTenant_NamesPackagesInInchesAndPounds()
+    {
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(957, "J957"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(957, BananaBoxes());
+
+        await using var verify = CreateContext();
+        Assert.Equal("Packages updated to 2 × Banana box 53 x 39 x 24 in, 8 lb",
+            (await verify.TucNotes.SingleAsync(n => n.JobId == 957, TestContext.Current.CancellationToken)).NoteText);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ArchivedJob_WritesTheNoteToTheArchive()
+    {
+        await using var ctx = CreateContext();
+        ctx.TucJobArchives.Add(CreateArchiveJob(958, "A958"));
+        ctx.TucJobItemsArchives.Add(new TucJobItemsArchive { JobId = 958, ItemId = 1, Items = 1, Notes = "Pallet", Weight = 8 });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForJobAsync(958, BananaBoxes());
+
+        await using var verify = CreateContext();
+        var note = Assert.Single(await verify.TucNoteArchives.Where(n => n.JobId == 958)
+            .ToListAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Packages updated from 1 × Pallet, 8 kg to 2 × Banana box 53 x 39 x 24 cm, 8 kg", note.NoteText);
+        Assert.False(await verify.TucNotes.AnyAsync(n => n.JobId == 958, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForBulkJobAsync_ChangedPackages_WritesABulkNote()
+    {
+        await using var ctx = CreateContext();
+        ctx.TblBulkJobs.Add(CreateBulkJob(959, "B959"));
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await CreateRepository().UpdatePackagesForBulkJobAsync(959, BananaBoxes());
+
+        await using var verify = CreateContext();
+        var note = Assert.Single(await verify.TblBulkJobNotes.Where(n => n.BulkJobId == 959)
+            .ToListAsync(TestContext.Current.CancellationToken));
+        Assert.Equal("Packages updated to 2 × Banana box 53 x 39 x 24 cm, 8 kg", note.NoteText);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     private static TucJob CreateJob(int id, string jobNumber) => new()
