@@ -551,9 +551,13 @@ public class CourierDriverManagementListTests : IAsyncDisposable
     {
         await SeedPlatesAsync();
 
-        var aroha = await CreateRepository().GetCourierDetailsForDashboardAsync(1);
+        var repo = CreateRepository();
+
+        var aroha = await repo.GetCourierDetailsForDashboardAsync(1);
+        var ben = await repo.GetCourierDetailsForDashboardAsync(2);
 
         Assert.Equal("NZX123", aroha.VehicleInformation.Rego);
+        Assert.Equal("QRT456", ben.VehicleInformation.Rego);
     }
 
     [Fact]

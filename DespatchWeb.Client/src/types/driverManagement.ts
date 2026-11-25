@@ -54,7 +54,7 @@ export interface ContactInformation {
 }
 
 export interface VehicleInformation {
-    rego: string;
+    rego: string | null;
     vehicleYear?: number;
     vehicleModel: string;
     vehicleInsurance: string;

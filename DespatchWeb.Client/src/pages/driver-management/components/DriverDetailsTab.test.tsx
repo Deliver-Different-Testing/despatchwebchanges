@@ -173,7 +173,7 @@ describe('DriverDetailsTab', () => {
         });
 
         it('should show a dash when no number plate is saved', () => {
-            setupMocks({driver: {...mockDriverData, vehicleInformation: {...mockDriverData.vehicleInformation, rego: ''}}});
+            setupMocks({driver: {...mockDriverData, vehicleInformation: {...mockDriverData.vehicleInformation, rego: '  '}}});
             renderWithProviders();
 
             expect(screen.getByText('Number plate').nextElementSibling).toHaveTextContent('—');
