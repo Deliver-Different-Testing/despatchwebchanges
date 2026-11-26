@@ -28,11 +28,14 @@ public sealed class InboundAgentLinkService(
             .FirstOrDefaultAsync(cancellationToken);
 
         var nowUtc = clock.UtcNow;
-        var expiresUtc = jobDate is { } date && date != default
-            ? TimeZoneHelper.TenantLocalToUtc(date, tenantInfo.GetTenantTimeZone()).AddDays(LinkLifetimeDays)
-            : nowUtc.AddDays(LinkLifetimeDays);
+        var startUtc = jobDate is { } date && date != default
+            ? Max(TimeZoneHelper.TenantLocalToUtc(date, tenantInfo.GetTenantTimeZone()), nowUtc)
+            : nowUtc;
+        var expiresUtc = startUtc.AddDays(LinkLifetimeDays);
 
-        await RevokeJobTokensAsync(context, jobId, cancellationToken);
+        await context.AgentAssignmentTokens
+            .Where(t => t.JobId == jobId && t.AgentId == agentId && t.RevokedUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedUtc, nowUtc), cancellationToken);
 
         var (token, hash) = AgentLinkToken.Create();
         context.AgentAssignmentTokens.Add(new AgentAssignmentToken
@@ -62,6 +65,8 @@ public sealed class InboundAgentLinkService(
             .Where(t => t.JobId == jobId && t.RevokedUtc == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedUtc, nowUtc), cancellationToken);
     }
+
+    private static DateTime Max(DateTime a, DateTime b) => a >= b ? a : b;
 
     private static async Task<string?> GetBaseUrlAsync(DespatchContext context, CancellationToken cancellationToken)
     {

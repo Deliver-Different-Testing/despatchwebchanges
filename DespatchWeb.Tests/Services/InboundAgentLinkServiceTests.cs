@@ -208,7 +208,21 @@ public class InboundAgentLinkServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task MintingForANewAssignment_RevokesEveryEarlierTokenForTheJob()
+    public async Task MintingForTheSameAgent_RevokesTheirEarlierToken()
+    {
+        await SeedAsync();
+        await MintAsync();
+        await MintAsync();
+
+        var rows = await TokensAsync();
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(_clock.UtcNow, rows[0].RevokedUtc);
+        Assert.Null(rows[1].RevokedUtc);
+    }
+
+    [Fact]
+    public async Task MintingForAnotherAgent_LeavesTheFirstAgentsTokenLive()
     {
         await SeedAsync();
         await MintAsync();
@@ -217,8 +231,18 @@ public class InboundAgentLinkServiceTests : IAsyncDisposable
         var rows = await TokensAsync();
 
         Assert.Equal(2, rows.Count);
-        Assert.Equal(_clock.UtcNow, rows[0].RevokedUtc);
-        Assert.Null(rows[1].RevokedUtc);
+        Assert.All(rows, r => Assert.Null(r.RevokedUtc));
+    }
+
+    [Fact]
+    public async Task Expiry_ForAJobDatedLongAgo_RunsFourteenDaysFromIssue()
+    {
+        await SeedAsync(jobDate: _clock.TenantNow.AddDays(-30));
+
+        await MintAsync();
+
+        var row = Assert.Single(await TokensAsync());
+        Assert.Equal(_clock.UtcNow.AddDays(14), row.ExpiresUtc);
     }
 
     [Fact]
@@ -287,24 +311,59 @@ public class InboundAgentLinkServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task ReassigningToAnotherAgent_RevokesTheFirstAgentsLink()
+    public async Task ReassigningToAnotherAgent_LeavesTheFirstAgentsRowLive_AndMintsTheSecondsOwn()
     {
         await SeedAsync();
-        _context.TucAgents.Add(new TucAgent
-        {
-            UcagId = 2, UcagName = "Swift", UcagFax = "desk@swift.example", CreatedBy = "Test", LastModifiedBy = "Test"
-        });
-        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await AddSecondAgentAsync("desk@swift.example");
         var repository = Repository();
 
         await repository.AddAgentToJobAsync(AgentId, JobId);
         await repository.AddAgentToJobAsync(2, JobId);
 
         var rows = await TokensAsync();
-        Assert.Equal(2, rows.Count);
-        Assert.NotNull(rows[0].RevokedUtc);
-        Assert.Null(rows[1].RevokedUtc);
-        Assert.Equal(2, rows[1].AgentId);
+        Assert.Equal([AgentId, 2], rows.Select(r => r.AgentId));
+        Assert.All(rows, r => Assert.Null(r.RevokedUtc));
+    }
+
+    [Fact]
+    public async Task ReassigningToAnAgentWithNoEmail_MintsNothingAndRevokesNothing()
+    {
+        await SeedAsync();
+        await AddSecondAgentAsync(null);
+        var repository = Repository();
+
+        await repository.AddAgentToJobAsync(AgentId, JobId);
+        await repository.AddAgentToJobAsync(2, JobId);
+
+        var row = Assert.Single(await TokensAsync());
+        Assert.Equal(AgentId, row.AgentId);
+        Assert.Null(row.RevokedUtc);
+    }
+
+    [Fact]
+    public async Task AToBToA_KeepsAsOriginalRowLive_AndSendsNoSecondEmail()
+    {
+        await SeedAsync();
+        await AddSecondAgentAsync(null);
+        var repository = Repository();
+
+        await repository.AddAgentToJobAsync(AgentId, JobId);
+        await repository.AddAgentToJobAsync(2, JobId);
+        var back = await repository.AddAgentToJobAsync(AgentId, JobId);
+
+        Assert.Equal(AgentInboundEmailStatus.AlreadySent, back.Status);
+        var row = Assert.Single(await TokensAsync());
+        Assert.Equal(AgentId, row.AgentId);
+        Assert.Null(row.RevokedUtc);
+    }
+
+    private async Task AddSecondAgentAsync(string? email)
+    {
+        _context.TucAgents.Add(new TucAgent
+        {
+            UcagId = 2, UcagName = "Swift", UcagFax = email, CreatedBy = "Test", LastModifiedBy = "Test"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
