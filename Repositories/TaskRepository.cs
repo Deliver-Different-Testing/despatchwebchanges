@@ -141,197 +141,146 @@ public class TaskRepository(
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
-        var strategy = Context.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
+        await RunInStaffTransactionAsync(async () =>
         {
-            await using var transaction = await Context.Database.BeginTransactionAsync();
+            var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new { e.UcevClosed })
+                .FirstOrDefaultAsync();
 
-            try
+            if (existingEvent == null)
             {
-                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
+                throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+            }
+
+            // Only create audit record if value actually changed
+            if (existingEvent.UcevClosed != closed)
+            {
+                var callerStaffId = await EnsureCallerIsStaffAsync();
+
+                await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .Select(e => new { e.UcevClosed })
-                    .FirstOrDefaultAsync();
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevClosed, closed));
 
-                if (existingEvent == null)
-                {
-                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
-                }
-
-                // Only create audit record if value actually changed
-                if (existingEvent.UcevClosed != closed)
-                {
-                    var callerStaffId = await EnsureCallerIsStaffAsync();
-
-                    await Context.TucEvents
-                        .Where(e => e.UcevId == eventId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(e => e.UcevClosed, closed));
-
-                    await CreateEventAuditRecord(
-                        eventId,
-                        callerStaffId,
-                        TucEventChangeType.Update,
-                        "UcevClosed",
-                        existingEvent.UcevClosed.ToString(),
-                        closed.ToString()
-                    );
-                }
-
-                await transaction.CommitAsync();
+                await CreateEventAuditRecord(
+                    eventId,
+                    callerStaffId,
+                    TucEventChangeType.Update,
+                    "UcevClosed",
+                    existingEvent.UcevClosed.ToString(),
+                    closed.ToString()
+                );
             }
-            catch (Exception ex) when (IsStaffForeignKeyViolation(ex))
-            {
-                await transaction.RollbackAsync();
-                throw new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing);
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+
         });
     }
 
     public async Task UpdateEventDueTimeAsync(int eventId, DateTimeOffset dueTime)
     {
-        var strategy = Context.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
+        await RunInStaffTransactionAsync(async () =>
         {
-            await using var transaction = await Context.Database.BeginTransactionAsync();
+            var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new { e.UcevDueTime })
+                .FirstOrDefaultAsync();
 
-            try
+            if (existingEvent == null)
             {
-                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
+                throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+            }
+
+            if (existingEvent.UcevDueTime != dueTime.DateTime)
+            {
+                var callerStaffId = await EnsureCallerIsStaffAsync();
+
+                await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .Select(e => new { e.UcevDueTime })
-                    .FirstOrDefaultAsync();
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevDueTime, dueTime.DateTime));
 
-                if (existingEvent == null)
-                {
-                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
-                }
-
-                if (existingEvent.UcevDueTime != dueTime.DateTime)
-                {
-                    var callerStaffId = await EnsureCallerIsStaffAsync();
-
-                    await Context.TucEvents
-                        .Where(e => e.UcevId == eventId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(e => e.UcevDueTime, dueTime.DateTime));
-
-                    await CreateEventAuditRecord(
-                        eventId,
-                        callerStaffId,
-                        TucEventChangeType.Update,
-                        "UcevDueTime",
-                        existingEvent.UcevDueTime.ToString("O"),
-                        dueTime.ToString("O")
-                    );
-                }
-
-                await transaction.CommitAsync();
+                await CreateEventAuditRecord(
+                    eventId,
+                    callerStaffId,
+                    TucEventChangeType.Update,
+                    "UcevDueTime",
+                    existingEvent.UcevDueTime.ToString("O"),
+                    dueTime.ToString("O")
+                );
             }
-            catch (Exception ex) when (IsStaffForeignKeyViolation(ex))
-            {
-                await transaction.RollbackAsync();
-                throw new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing);
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+
         });
     }
 
     public async Task ReassignEventToUserAsync(int eventId, int staffId)
     {
-        var strategy = Context.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
+        await RunInStaffTransactionAsync(async () =>
         {
-            await using var transaction = await Context.Database.BeginTransactionAsync();
+            var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new
+                {
+                    e.UcevStaffIdin,
+                    e.UcevJobId,
+                    OldStaffName = e.UcevStaffIdinNavigation != null
+                        ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+                        : null,
+                    TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
+                })
+                .FirstOrDefaultAsync();
 
-            try
+            if (existingEvent == null)
             {
-                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
+                throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+            }
+
+            if (existingEvent.UcevStaffIdin != staffId)
+            {
+                var callerStaffId = await EnsureAssignableAsync(staffId);
+
+                var oldStaffName = existingEvent.OldStaffName?.Trim();
+
+                await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .Select(e => new
-                    {
-                        e.UcevStaffIdin,
-                        e.UcevJobId,
-                        OldStaffName = e.UcevStaffIdinNavigation != null
-                            ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
-                            : null,
-                        TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
-                    })
-                    .FirstOrDefaultAsync();
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevStaffIdin, staffId));
 
-                if (existingEvent == null)
+                await CreateEventAuditRecord(
+                    eventId,
+                    callerStaffId,
+                    TucEventChangeType.Update,
+                    "UcevStaffIdin",
+                    existingEvent.UcevStaffIdin?.ToString() ?? "null",
+                    staffId.ToString()
+                );
+
+                if (existingEvent.UcevJobId.HasValue)
                 {
-                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
-                }
+                    var newStaffName = (await Context.TucStaffs
+                        .Where(s => s.UcstId == staffId)
+                        .Select(s => s.UcstFirstName + " " + s.UcstLastName)
+                        .FirstOrDefaultAsync())?.Trim();
 
-                if (existingEvent.UcevStaffIdin != staffId)
-                {
-                    var callerStaffId = await EnsureAssignableAsync(staffId);
+                    var comments = string.IsNullOrEmpty(oldStaffName)
+                        ? $"Task '{existingEvent.TaskTitle}' assigned to {newStaffName}"
+                        : $"Task '{existingEvent.TaskTitle}' reassigned from {oldStaffName} to {newStaffName}";
 
-                    var oldStaffName = existingEvent.OldStaffName?.Trim();
-
-                    await Context.TucEvents
-                        .Where(e => e.UcevId == eventId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(e => e.UcevStaffIdin, staffId));
-
-                    await CreateEventAuditRecord(
-                        eventId,
-                        callerStaffId,
-                        TucEventChangeType.Update,
-                        "UcevStaffIdin",
-                        existingEvent.UcevStaffIdin?.ToString() ?? "null",
-                        staffId.ToString()
-                    );
-
-                    if (existingEvent.UcevJobId.HasValue)
+                    await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
                     {
-                        var newStaffName = (await Context.TucStaffs
-                            .Where(s => s.UcstId == staffId)
-                            .Select(s => s.UcstFirstName + " " + s.UcstLastName)
-                            .FirstOrDefaultAsync())?.Trim();
-
-                        var comments = string.IsNullOrEmpty(oldStaffName)
-                            ? $"Task '{existingEvent.TaskTitle}' assigned to {newStaffName}"
-                            : $"Task '{existingEvent.TaskTitle}' reassigned from {oldStaffName} to {newStaffName}";
-
-                        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
-                        {
-                            JobId = existingEvent.UcevJobId.Value,
-                            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
-                            FieldName = "TaskAssignment",
-                            OldValue = oldStaffName,
-                            NewValue = newStaffName,
-                            StaffId = callerStaffId,
-                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(callerStaffId),
-                            UpdatedAt = DateTime.UtcNow,
-                            Comments = comments
-                        });
-                        await Context.SaveChangesAsync();
-                    }
+                        JobId = existingEvent.UcevJobId.Value,
+                        ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                        FieldName = "TaskAssignment",
+                        OldValue = oldStaffName,
+                        NewValue = newStaffName,
+                        StaffId = callerStaffId,
+                        UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(callerStaffId),
+                        UpdatedAt = DateTime.UtcNow,
+                        Comments = comments
+                    });
+                    await Context.SaveChangesAsync();
                 }
+            }
 
-                await transaction.CommitAsync();
-            }
-            catch (Exception ex) when (IsStaffForeignKeyViolation(ex))
-            {
-                await transaction.RollbackAsync();
-                throw new TaskAssignmentException(TaskAssignmentException.StaffRecordMissing);
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
         });
     }
 
@@ -364,12 +313,7 @@ public class TaskRepository(
         return callerStaffId.Value;
     }
 
-    /// <summary>The pre-checks can race a staff row being removed; the foreign keys are the real guard.</summary>
-    private static bool IsStaffForeignKeyViolation(Exception ex) =>
-        (ex as SqlException ?? ex.InnerException as SqlException) is { Number: 547 } sql
-        && sql.Message.Contains("tucStaff", StringComparison.OrdinalIgnoreCase);
-
-    public async Task UnassignEventAsync(int eventId)
+    private async Task RunInStaffTransactionAsync(Func<Task> work)
     {
         var strategy = Context.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
@@ -378,62 +322,7 @@ public class TaskRepository(
 
             try
             {
-                var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
-                    .Where(e => e.UcevId == eventId)
-                    .Select(e => new
-                    {
-                        e.UcevStaffIdin,
-                        e.UcevJobId,
-                        StaffName = e.UcevStaffIdinNavigation != null
-                            ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
-                            : null,
-                        TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
-                    })
-                    .FirstOrDefaultAsync();
-
-                if (existingEvent == null)
-                {
-                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
-                }
-
-                if (existingEvent.UcevStaffIdin != null)
-                {
-                    var callerStaffId = await EnsureCallerIsStaffAsync();
-
-                    var oldStaffId = existingEvent.UcevStaffIdin.Value;
-                    var oldStaffName = existingEvent.StaffName?.Trim();
-
-                    await Context.TucEvents
-                        .Where(e => e.UcevId == eventId)
-                        .ExecuteUpdateAsync(setters => setters
-                            .SetProperty(e => e.UcevStaffIdin, (int?)null));
-
-                    await CreateEventAuditRecord(
-                        eventId,
-                        callerStaffId,
-                        TucEventChangeType.Update,
-                        "UcevStaffIdin",
-                        oldStaffId.ToString(),
-                        "null"
-                    );
-
-                    if (existingEvent.UcevJobId.HasValue)
-                    {
-                        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
-                        {
-                            JobId = existingEvent.UcevJobId.Value,
-                            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
-                            FieldName = "TaskAssignment",
-                            OldValue = oldStaffName,
-                            NewValue = null,
-                            StaffId = callerStaffId,
-                            UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(callerStaffId),
-                            UpdatedAt = DateTime.UtcNow,
-                            Comments = $"Task '{existingEvent.TaskTitle}' unassigned from {oldStaffName}"
-                        });
-                        await Context.SaveChangesAsync();
-                    }
-                }
+                await work();
 
                 await transaction.CommitAsync();
             }
@@ -447,6 +336,75 @@ public class TaskRepository(
                 await transaction.RollbackAsync();
                 throw;
             }
+        });
+    }
+
+    /// <summary>The pre-checks can race a staff row being removed; the foreign keys are the real guard.</summary>
+    private static bool IsStaffForeignKeyViolation(Exception ex) =>
+        (ex as SqlException ?? ex.InnerException as SqlException) is { Number: 547 } sql
+        && sql.Message.Contains("tucStaff", StringComparison.OrdinalIgnoreCase);
+
+    public async Task UnassignEventAsync(int eventId)
+    {
+        await RunInStaffTransactionAsync(async () =>
+        {
+            var existingEvent = await ApplyScopeFilter(Context.TucEvents, Context)
+                .Where(e => e.UcevId == eventId)
+                .Select(e => new
+                {
+                    e.UcevStaffIdin,
+                    e.UcevJobId,
+                    StaffName = e.UcevStaffIdinNavigation != null
+                        ? e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+                        : null,
+                    TaskTitle = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : null
+                })
+                .FirstOrDefaultAsync();
+
+            if (existingEvent == null)
+            {
+                throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+            }
+
+            if (existingEvent.UcevStaffIdin != null)
+            {
+                var callerStaffId = await EnsureCallerIsStaffAsync();
+
+                var oldStaffId = existingEvent.UcevStaffIdin.Value;
+                var oldStaffName = existingEvent.StaffName?.Trim();
+
+                await Context.TucEvents
+                    .Where(e => e.UcevId == eventId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.UcevStaffIdin, (int?)null));
+
+                await CreateEventAuditRecord(
+                    eventId,
+                    callerStaffId,
+                    TucEventChangeType.Update,
+                    "UcevStaffIdin",
+                    oldStaffId.ToString(),
+                    "null"
+                );
+
+                if (existingEvent.UcevJobId.HasValue)
+                {
+                    await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
+                    {
+                        JobId = existingEvent.UcevJobId.Value,
+                        ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                        FieldName = "TaskAssignment",
+                        OldValue = oldStaffName,
+                        NewValue = null,
+                        StaffId = callerStaffId,
+                        UpdatedByType = DeliveryJourneyUpdatedBy.TypeForStaffId(callerStaffId),
+                        UpdatedAt = DateTime.UtcNow,
+                        Comments = $"Task '{existingEvent.TaskTitle}' unassigned from {oldStaffName}"
+                    });
+                    await Context.SaveChangesAsync();
+                }
+            }
+
         });
     }
 
