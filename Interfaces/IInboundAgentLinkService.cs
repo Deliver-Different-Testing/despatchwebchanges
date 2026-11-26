@@ -12,9 +12,11 @@ public interface IInboundAgentLinkService
 {
     /// <summary>
     /// Mints a token for <paramref name="agentId"/> on <paramref name="jobId"/> and returns the full link, or
-    /// <c>null</c> when the tenant has no <c>InboundUrl</c> (nothing is minted then). Earlier tokens for the job are
-    /// revoked at once; the new row is added to <paramref name="context"/> and saved by the caller, so it commits with
-    /// the message that carries the link.
+    /// <c>null</c> when the tenant has no <c>InboundUrl</c> (nothing is minted then). Only this agent's earlier live
+    /// tokens for the job are revoked, at once. Another agent's link is not touched: Inbound Agent honours a token
+    /// only while its AgentId equals the job's currently assigned agent, which is what invalidates a previous
+    /// agent's link on re-assignment. The new row is added to <paramref name="context"/> and saved by the caller, so
+    /// it commits with the message that carries the link.
     /// </summary>
     Task<string?> MintJobLinkAsync(DespatchContext context, int jobId, int agentId,
         CancellationToken cancellationToken = default);
