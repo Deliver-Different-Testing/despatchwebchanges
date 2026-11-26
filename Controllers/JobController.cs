@@ -2181,6 +2181,13 @@ public class JobController(
 
             return BadRequest(new { message = e.Message });
         }
+        catch (ArchivedClientChangeException e)
+        {
+            Log.Information(e, "UpdateJob refused: job {JobId}, field {JobProperty}, invoiced archived job",
+                jobId, field);
+
+            return BadRequest(new { message = e.Message });
+        }
         catch (ClientNotFoundException e)
         {
             Log.Information(e, "UpdateJob refused: job {JobId}, field {JobProperty}, client not visible", jobId, field);
