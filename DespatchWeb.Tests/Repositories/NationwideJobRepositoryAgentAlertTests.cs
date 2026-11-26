@@ -1,3 +1,4 @@
+using DeliverDifferent.AgentAlerts.Rendering;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -219,5 +220,65 @@ public class NationwideJobRepositoryAgentAlertTests : IAsyncDisposable
 
         Assert.Equal(AgentInboundEmailStatus.Queued, status);
         Assert.Equal(2, await MessageCountAsync());
+    }
+
+    [Fact]
+    public async Task Send_UsesTheTenantsTemplateForTheLegsAlertType()
+    {
+        await SeedAsync("KT2103CRTDEL");
+        _context.AgentAlertSettings.Add(new AgentAlertSetting
+        {
+            Enabled = true, DeliverySubject = "Recover [JobNumber]", DeliveryBody = "<p>Hello [AgentName]</p>",
+            PickupSubject = "Wrong one", ReplyToEmail = "dispatch@otgcargo.example"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        await Repository().AddAgentToJobAsync(AgentId, JobId);
+
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Recover KT2103CRTDEL", message.Subject);
+        Assert.Contains("Hello Metro Air", message.UcmmMessage);
+        Assert.Equal("dispatch@otgcargo.example", message.ReplyToEmailAddress);
+    }
+
+    [Fact]
+    public async Task Send_WithNoSavedTemplate_UsesTheBuiltInDefaultForTheAlertType()
+    {
+        await SeedAsync("KT2103CRTLHP");
+
+        await Repository().AddAgentToJobAsync(AgentId, JobId);
+
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.StartsWith("Pickup alert KT2103CRTLHP", message.Subject);
+        Assert.Contains("Please collect job KT2103CRTLHP", message.UcmmMessage);
+        Assert.Contains(Link, message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task Send_DispatcherSubjectAndNote_AreUsed()
+    {
+        await SeedAsync();
+
+        await Repository().AddAgentToJobAsync(AgentId, JobId, emailSubject: "Urgent [JobNumber]",
+            emailNote: "Gate code 4411");
+
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Urgent KT2103CRTDEL", message.Subject);
+        Assert.Contains("Gate code 4411", message.UcmmMessage);
+    }
+
+    [Fact]
+    public async Task Compose_MatchesWhatIsSent()
+    {
+        await SeedAsync();
+        var repository = Repository();
+
+        var preview = await repository.ComposeAgentAlertAsync(AgentId, JobId, emailNote: "Call first");
+        await repository.AddAgentToJobAsync(AgentId, JobId, emailNote: "Call first");
+
+        var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(AgentAlertType.Delivery, preview.AlertType);
+        Assert.Equal(preview.Subject, message.Subject);
+        Assert.Equal(preview.HtmlBody, message.UcmmMessage);
     }
 }

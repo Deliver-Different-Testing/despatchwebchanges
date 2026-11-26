@@ -117,30 +117,30 @@ export interface AgentInboundEmailResult {
     agentEmail: string | null;
     willEmail: boolean;
     alertType?: AgentAlertType | null;
-    /** Hardcoded default subject template (returned by the preview endpoint only). */
-    defaultSubject?: string;
-    /** Hardcoded default body template (returned by the preview endpoint only). */
-    defaultBody?: string;
+    /** The subject as it will be sent (preview endpoint only, when an alert would go). */
+    subject?: string | null;
+    /** The email HTML as it will be sent, note included (preview endpoint only). */
+    html?: string | null;
 }
 
 /**
  * Assign an agent to a job. Returns whether the agent was emailed the inbound-agent
  * link (best-effort — the assignment itself always succeeds if this resolves).
  *
- * `emailSubject`/`emailBody` optionally override the hardcoded default templates for this
- * send (the dispatcher's edits from the confirmation dialog); omit to use the defaults.
+ * `emailSubject` replaces the tenant's subject for this send (tokens such as [JobNumber] still fill);
+ * `emailNote` is the dispatcher's plain-text note, shown above the alert. Omit both for the tenant's alert as is.
  */
 export async function assignAgentToJob(
     jobId: number,
     agentId: number,
     includeStopJobs = false,
     emailSubject?: string,
-    emailBody?: string,
+    emailNote?: string,
     resend = false,
 ): Promise<AgentInboundEmailResult> {
     return apiClient.post<AgentInboundEmailResult>(
         'nationwideJob/AssignAgentToJob',
-        {jobId, agentId, includeStopJobs, emailSubject, emailBody, resend},
+        {jobId, agentId, includeStopJobs, emailSubject, emailNote, resend},
     );
 }
 
@@ -176,12 +176,12 @@ export async function assignAgentToJobs(
     agentId: number,
     includeStopJobs = false,
     emailSubject?: string,
-    emailBody?: string,
+    emailNote?: string,
     resend = false,
 ): Promise<BulkAssignmentResponse> {
     return apiClient.post<BulkAssignmentResponse>(
         'nationwideJob/AssignAgentToJobs',
-        {jobIds, agentId, includeStopJobs, emailSubject, emailBody, resend},
+        {jobIds, agentId, includeStopJobs, emailSubject, emailNote, resend},
     );
 }
 
@@ -197,17 +197,18 @@ export async function assignNpAgentToJobs(
 }
 
 /**
- * Pre-flight (no side effects): would assigning this agent email them the inbound-agent
- * link, and to what address? Used to warn the dispatcher before they confirm.
+ * Pre-flight (no side effects): would assigning this agent email them the agent alert, to what
+ * address, and what exactly would it say (with `note` shown above the message)?
  */
 export async function getAgentInboundEmailPreview(
     agentId: number,
     jobId: number,
+    note?: string,
     options?: RequestOptions,
 ): Promise<AgentInboundEmailResult> {
     return apiClient.get<AgentInboundEmailResult>(
         'nationwideJob/GetAgentInboundEmailPreview',
-        {agentId, jobId},
+        note ? {agentId, jobId, note} : {agentId, jobId},
         options,
     );
 }

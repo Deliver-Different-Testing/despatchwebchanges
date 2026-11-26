@@ -131,8 +131,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     const [assignToStopJobs, setAssignToStopJobs] = useState(false);
     const [deliveryNotes, setDeliveryNotes] = useState('');
 
-    // Agent-email template (editable per-send; owned by AgentEmailFields, reported back here)
-    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: '', resend: false});
+    // Agent alert subject edit and note (owned by AgentEmailFields, reported back here)
+    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: undefined, note: '', resend: false});
     const [packageReadyTime, setPackageReadyTime] = useState<Dayjs | null>(null);
     const [deliveryByTime, setDeliveryByTime] = useState<Dayjs | null>(null);
     const [packageTimeEditEnabled, setPackageTimeEditEnabled] = useState(false);
@@ -431,7 +431,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             setAwb(existingAwb || '');
             setAssignToStopJobs(false);
             setDeliveryNotes('');
-            setAgentEmail({willEmail: false, subject: '', body: '', resend: false});
+            setAgentEmail({willEmail: false, subject: undefined, note: '', resend: false});
             setPackageTimeEditEnabled(false);
             setShowWarning(false);
             setCargoProcessing(null);
@@ -484,7 +484,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
             packageDeliverByTime: deliveryByTime ?? undefined,
             packageDeliveryNotes: deliveryNotes || undefined,
             emailSubject: sendsAgentEmail ? agentEmail.subject : undefined,
-            emailBody: sendsAgentEmail ? agentEmail.body : undefined,
+            emailNote: sendsAgentEmail ? agentEmail.note : undefined,
         };
         onConfirm(result);
     };

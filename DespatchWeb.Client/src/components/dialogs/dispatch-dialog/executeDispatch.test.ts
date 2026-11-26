@@ -80,7 +80,7 @@ describe('executeDispatchConfirmation', () => {
                 type: 'Agent',
                 destination: agent,
                 emailSubject: 'Subject',
-                emailBody: 'Body',
+                emailNote: 'Body',
                 includeStopJobs: true,
             });
 
@@ -88,7 +88,7 @@ describe('executeDispatchConfirmation', () => {
         });
 
         it('forwards Send again', async () => {
-            await executeDispatchConfirmation(job, {type: 'Agent', destination: agent, emailSubject: 'S', emailBody: 'B', resend: true});
+            await executeDispatchConfirmation(job, {type: 'Agent', destination: agent, emailSubject: 'S', emailNote: 'B', resend: true});
 
             expect(mockAssignAgent).toHaveBeenCalledWith(42, 201, false, 'S', 'B', true);
         });

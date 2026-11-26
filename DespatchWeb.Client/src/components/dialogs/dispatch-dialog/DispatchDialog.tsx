@@ -119,8 +119,8 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     const [options, setOptions] = useState<ISuggestion[]>([]);
     const [searchLoading, setSearchLoading] = useState(false);
 
-    // Editable agent-email template (Agent option, single job). Fed by AgentEmailFields.
-    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: '', body: '', resend: false});
+    // Agent alert subject edit and note (Agent option, single job). Fed by AgentEmailFields.
+    const [agentEmail, setAgentEmail] = useState<AgentEmailState>({willEmail: false, subject: undefined, note: '', resend: false});
 
     // Agent extras carried over from the Nationwide flight/agent dialog.
     const [includeStopJobs, setIncludeStopJobs] = useState(false);
@@ -151,7 +151,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setDestination(existingDestination ?? null);
         setInputValue(existingDestination?.text ?? '');
         setOptions([]);
-        setAgentEmail({willEmail: false, subject: '', body: '', resend: false});
+        setAgentEmail({willEmail: false, subject: undefined, note: '', resend: false});
         setIncludeStopJobs(false);
         setAwb('');
         setSelectedPartnerId('');
@@ -209,7 +209,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
         setDestination(null);
         setInputValue('');
         setOptions([]);
-        setAgentEmail({willEmail: false, subject: '', body: '', resend: false});
+        setAgentEmail({willEmail: false, subject: undefined, note: '', resend: false});
         setIncludeStopJobs(false);
         setAwb('');
         setSubmitError('');
@@ -256,7 +256,7 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                     ...(isAgent && agentEmail.willEmail
                         ? {
                             emailSubject: agentEmail.subject,
-                            emailBody: agentEmail.body,
+                            emailNote: agentEmail.note,
                             ...(agentEmail.resend ? {resend: true} : {}),
                         }
                         : {}),

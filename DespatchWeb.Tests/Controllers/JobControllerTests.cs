@@ -2191,6 +2191,26 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateJob_InvoicedArchivedClientChange_ReturnsBadRequestWithTheAuthoredMessage()
+    {
+        // Arrange
+        const int jobId = 1;
+        const string message = "Job E14360FHS has been invoiced, so its client can't be changed here.";
+
+        _jobCommandRepositoryMock.UpdateJobAsync(jobId, JobProperty.ClientID, "20")
+            .ThrowsAsync(new ArchivedClientChangeException(message));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.UpdateJob(jobId, JobProperty.ClientID, "20", CancellationToken.None);
+
+        // Assert - the dispatcher reads why, instead of the raw trigger error in a 500
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains(message, JsonConvert.SerializeObject(badRequest.Value));
+    }
+
+    [Fact]
     public async Task UpdateJob_DateField_WithoutCascade_DoesNotPropagateToFamily()
     {
         // "This job only" must move the parent and nothing else — and must not fall through to
