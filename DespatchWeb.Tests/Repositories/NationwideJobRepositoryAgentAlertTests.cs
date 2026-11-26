@@ -34,7 +34,8 @@ public class NationwideJobRepositoryAgentAlertTests : IAsyncDisposable
         _tenantInfo.GetTenantTimeZone().Returns("New Zealand Standard Time");
         _tenantInfo.GetStaffId().Returns(7);
         _tenantInfo.GetStaffIdOrNull().Returns(7);
-        _linkService.BuildJobLinkAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(Link);
+        _linkService.BuildPreviewLinkAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(Link);
+        _linkService.MintJobLinkAsync(Arg.Any<DespatchContext>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(Link);
     }
 
     public async ValueTask DisposeAsync()

@@ -373,4 +373,6 @@ export interface JobListPanelProps {
     setUpdateSearchParamsCallback?: (cb: (params: Partial<JobListSearchParams>) => void) => void;
     /** Job search: widen the page's date filter to take in this span, and search again. */
     onWidenDates?: (range: {from: Dayjs; to: Dayjs}) => void;
+    /** What an empty list says when the page holds it to a date range (see `dateFilterEmptyState`). */
+    dateEmptyState?: {title: string; message: string; actionText?: string; onAction?: () => void};
 }

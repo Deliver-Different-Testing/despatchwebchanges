@@ -12,41 +12,12 @@ namespace DespatchWeb.Tests.Repositories;
 /// Verifies that editing a job's booked date/time writes the date to UcjbDate and the time to UcjbTime
 /// for live jobs (via ExecuteUpdateAsync) and archived jobs (via entity tracking).
 /// </summary>
-public class JobRepositoryEditBookedTimeTests : IAsyncDisposable
+public class JobRepositoryEditBookedTimeTests : JobRepositoryTestBase
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    public JobRepositoryEditBookedTimeTests()
+    public JobRepositoryEditBookedTimeTests() : base(1)
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private DespatchContext CreateContext() => _db.CreateContext();
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     [Fact]
     public async Task UpdateJobAsync_BookedTime_LiveJob_UpdatesBothUcjbDateAndUcjbTime()

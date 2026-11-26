@@ -14,31 +14,8 @@ namespace DespatchWeb.Tests.Repositories;
 /// (mirroring the unassign path). Uses a SQLite in-memory database (foreign keys are
 /// off, so related rows only need to exist where a navigation is read).
 /// </summary>
-public class TaskRepositoryReassignTests : IAsyncDisposable
+public class TaskRepositoryReassignTests : TaskRepositoryStaffTestBase
 {
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly DespatchContext _context;
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly SqliteTestDatabase _db = new();
-    private readonly ITenantInfoService _infoServiceMock = Substitute.For<ITenantInfoService>();
-
-    public TaskRepositoryReassignTests()
-    {
-        _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
-        _infoServiceMock.GetStaffId().Returns(99);
-        _infoServiceMock.GetStaffIdOrNull().Returns(99);
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _context.DisposeAsync();
-        await _db.DisposeAsync();
-    }
-
-    private TaskRepository CreateRepository() => new(_contextFactoryMock, _infoServiceMock, _clock);
-
     private static TucStaff Staff(int id, string first, string last) => new()
     {
         UcstId = id,

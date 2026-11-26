@@ -31,61 +31,23 @@ public class NationwideJobController(
 {
     private bool CallerIsNetworkPartner => scopeProvider.Scope?.IsNetworkPartner ?? false;
 
-    public async Task<IActionResult> NationwideJobListNew([FromQuery] NationwideJobsRequestModel data)
+    public Task<IActionResult> NationwideJobListNew([FromQuery] NationwideJobsRequestModel data)
     {
-        try
-        {
-            var clientIds = await RetrieveAndFormatClientIds();
-
-            if (!data.IsInternal)
-            {
-                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
-            }
-
-            var isUsTenant = infoService.IsUsTenant();
-
-            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
-                NationwideWidget.JobList, data.DespatchViewIds);
-
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
-                    nameof(NationwideJobListNew)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
+        return NationwideJobListAsync(data, NationwideWidget.JobList, nameof(NationwideJobListNew));
     }
 
-    public async Task<IActionResult> NationwideJobListPod([FromQuery] NationwideJobsRequestModel data)
+    public Task<IActionResult> NationwideJobListPod([FromQuery] NationwideJobsRequestModel data)
     {
-        try
-        {
-            var clientIds = await RetrieveAndFormatClientIds();
-
-            if (!data.IsInternal)
-            {
-                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
-            }
-
-            var isUsTenant = infoService.IsUsTenant();
-
-            var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
-                NationwideWidget.Pod, data.DespatchViewIds);
-
-            return Json(result);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
-                    nameof(NationwideJobListPod)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
+        return NationwideJobListAsync(data, NationwideWidget.Pod, nameof(NationwideJobListPod));
     }
 
-    public async Task<IActionResult> NationwideJobListReprice([FromQuery] NationwideJobsRequestModel data)
+    public Task<IActionResult> NationwideJobListReprice([FromQuery] NationwideJobsRequestModel data)
+    {
+        return NationwideJobListAsync(data, NationwideWidget.Reprice, nameof(NationwideJobListReprice));
+    }
+
+    private async Task<IActionResult> NationwideJobListAsync(
+        NationwideJobsRequestModel data, NationwideWidget widget, string actionName)
     {
         try
         {
@@ -99,15 +61,14 @@ public class NationwideJobController(
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
-                NationwideWidget.Reprice, data.DespatchViewIds);
+                widget, data.DespatchViewIds);
 
             return Json(result);
         }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
-                    nameof(NationwideJobListReprice)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController), actionName));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }

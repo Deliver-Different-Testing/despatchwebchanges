@@ -165,16 +165,10 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await InCallerScope(ctx).AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
-        if (row is null)
+        var (row, failure) = await LoadPendingAsync(ctx, id, "approve", ct);
+        if (failure is not null)
         {
-            return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
-        }
-
-        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
-        {
-            return new JobChangeRequestResult
-                { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot approve" };
+            return failure;
         }
 
         if (IsLocalOrigin(row))
@@ -274,23 +268,15 @@ public sealed class JobChangeRequestService(
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, refreshedAmount), ct);
             }
 
-            try
-            {
-                await ctx.SaveChangesAsync(ct);
-            }
-            catch (DbUpdateConcurrencyException)
+            if (!await TrySaveAndCommitAsync(ctx, tx, ct))
             {
                 concurrencyConflict = true;
-                return;
             }
-
-            await tx.CommitAsync(ct);
         });
 
         if (concurrencyConflict)
         {
-            return new JobChangeRequestResult
-                { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
+            return ConcurrencyConflictResult();
         }
 
         if (row.UjcrPairingId is not { } pairingId)
@@ -326,16 +312,10 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await InCallerScope(ctx).AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
-        if (row is null)
+        var (row, failure) = await LoadPendingAsync(ctx, id, "reject", ct);
+        if (failure is not null)
         {
-            return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
-        }
-
-        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
-        {
-            return new JobChangeRequestResult
-                { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot reject" };
+            return failure;
         }
 
         if (IsLocalOrigin(row))
@@ -365,23 +345,15 @@ public sealed class JobChangeRequestService(
         {
             await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
-            try
-            {
-                await ctx.SaveChangesAsync(ct);
-            }
-            catch (DbUpdateConcurrencyException)
+            if (!await TrySaveAndCommitAsync(ctx, tx, ct))
             {
                 concurrencyConflict = true;
-                return;
             }
-
-            await tx.CommitAsync(ct);
         });
 
         if (concurrencyConflict)
         {
-            return new JobChangeRequestResult
-                { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
+            return ConcurrencyConflictResult();
         }
 
         if (row.UjcrPairingId is not { } pairingId)
@@ -409,16 +381,10 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await InCallerScope(ctx).AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
-        if (row is null)
+        var (row, failure) = await LoadPendingAsync(ctx, id, "cancel", ct);
+        if (failure is not null)
         {
-            return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
-        }
-
-        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
-        {
-            return new JobChangeRequestResult
-                { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot cancel" };
+            return failure;
         }
 
         // Only the originator can retract — peer-side rows are rejected via RejectAsync.
@@ -449,8 +415,7 @@ public sealed class JobChangeRequestService(
         }
         catch (DbUpdateConcurrencyException)
         {
-            return new JobChangeRequestResult
-                { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
+            return ConcurrencyConflictResult();
         }
 
         if (row.UjcrPairingId is not { } pairingId)
@@ -832,12 +797,10 @@ public sealed class JobChangeRequestService(
         PeerInboundChangeDecisionPayload payload, int? pairingId, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.AsTracking()
-            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid
-                                      && (pairingId == null || r.UjcrPairingId == pairingId), ct);
+        var row = await FindPeerRowAsync(ctx, sourceUuid, pairingId, ct);
         if (row is null)
         {
-            return new JobChangeRequestResult { Success = false, NotFound = true, Message = $"No request for SourceUuid {sourceUuid}" };
+            return PeerRowNotFoundResult(sourceUuid);
         }
 
         // Terminal statuses short-circuit so a replayed inbound is idempotent. Approved
@@ -867,12 +830,10 @@ public sealed class JobChangeRequestService(
         PeerInboundChangeAppliedPayload payload, int? pairingId, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.AsTracking()
-            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid
-                                      && (pairingId == null || r.UjcrPairingId == pairingId), ct);
+        var row = await FindPeerRowAsync(ctx, sourceUuid, pairingId, ct);
         if (row is null)
         {
-            return new JobChangeRequestResult { Success = false, NotFound = true, Message = $"No request for SourceUuid {sourceUuid}" };
+            return PeerRowNotFoundResult(sourceUuid);
         }
 
         // Terminal short-circuit. Crucially includes Cancelled — if the originator
@@ -957,6 +918,52 @@ public sealed class JobChangeRequestService(
     // global query filter applies inside the subquery. Staff/tenant/internal scopes bypass it unchanged.
     private static IQueryable<TucJobChangeRequest> InCallerScope(DespatchContext ctx) =>
         ctx.TucJobChangeRequests.Where(r => ctx.TucJobs.Any(j => j.UcjbId == r.UjcrJobId));
+
+    private static JobChangeRequestResult ConcurrencyConflictResult() =>
+        new() { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
+
+    private static JobChangeRequestResult PeerRowNotFoundResult(Guid sourceUuid) =>
+        new() { Success = false, NotFound = true, Message = $"No request for SourceUuid {sourceUuid}" };
+
+    private static Task<TucJobChangeRequest> FindPeerRowAsync(
+        DespatchContext ctx, Guid sourceUuid, int? pairingId, CancellationToken ct) =>
+        ctx.TucJobChangeRequests.AsTracking()
+            .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid
+                                      && (pairingId == null || r.UjcrPairingId == pairingId), ct);
+
+    private static async Task<(TucJobChangeRequest Row, JobChangeRequestResult Failure)> LoadPendingAsync(
+        DespatchContext ctx, int id, string verb, CancellationToken ct)
+    {
+        var row = await InCallerScope(ctx).AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
+        if (row is null)
+        {
+            return (null, new JobChangeRequestResult { Success = false, Message = "Change request not found" });
+        }
+
+        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
+        {
+            return (null, new JobChangeRequestResult
+                { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot {verb}" });
+        }
+
+        return (row, null);
+    }
+
+    private static async Task<bool> TrySaveAndCommitAsync(
+        DespatchContext ctx, Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction tx, CancellationToken ct)
+    {
+        try
+        {
+            await ctx.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
+
+        await tx.CommitAsync(ct);
+        return true;
+    }
 
     public async Task<IReadOnlyList<JobChangeRequestDto>> ListForJobAsync(int jobId, CancellationToken ct)
     {

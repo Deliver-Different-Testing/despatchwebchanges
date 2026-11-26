@@ -5,6 +5,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
 using NSubstitute;
+using DespatchWeb.Tests.Helpers;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -46,53 +47,9 @@ public class AgentAlertTokenBuilderTests : IAsyncDisposable
 
     private async Task SeedFamilyAsync(string carrierFsCode = "UA")
     {
-        _context.TblSettings.Add(new TblSetting
-        {
-            SettingId = 1,
-            InternetJobChargeType = 3,
-            InternetJobStaffId = 42,
-            SystemName = "OTG Cargo",
-            Version = "1.0",
-            ApplicationName = "Test",
-            AdminEmail = "test@test.com",
-            ReportUserName = "test",
-            ReportPassword = "test",
-            ReportDomain = "test",
-            DefaultDateRange = "30",
-            EnquiryEmail = "test@test.com",
-            Smtpserver = "localhost",
-            ContactUsEmailSubject = "Test",
-            NewsImageDirectory = "/img",
-            StaffImageDirectory = "/img",
-            CommunicationFileDirectory = "/files",
-            JoinOurTeamEmail = "test@test.com",
-            JoinOurTeamSubject = "Test",
-            JobFeedbackSubject = "Test",
-            InternetJobEmailSubject = "Test",
-            InternetJobPoaemail = "test@test.com",
-            InternetJobPoaemailSubject = "Test",
-            ToolTipImageDirectory = "/img",
-            InternetRoot = "http://test",
-            InternetClientDetailsEmail = "test@test.com",
-            InternetClientDetailsSubject = "Test",
-            JoinOurTeamReplyFromEmail = "test@test.com",
-            JoinOurTeamReplySubject = "Test",
-            JoinOurTeamReplyMessage = "Test",
-            JobDetailsReplyFromEmail = "test@test.com",
-            TrackAndTrackReplyFromEmail = "test@test.com",
-            PpdDescription = "Test",
-            PpdAppliedDescription = "Test",
-            UncheckDirectEmailMessage = "Test",
-            UncheckDirectEmailSubject = "Test",
-            UncheckDirectEmailReply = "test@test.com",
-            FaxHeadLogo = [],
-            FaxHeadLogoSmall = [],
-            LetterHeadLogo = [],
-            Created = TestDates.Now,
-            CreatedBy = "Test",
-            LastModified = TestDates.Now,
-            LastModifiedBy = "Test"
-        });
+        var setting = TestSettings.Minimal();
+        setting.SystemName = "OTG Cargo";
+        _context.TblSettings.Add(setting);
         _context.AgentAlertSettings.Add(new AgentAlertSetting { Enabled = true, DispatchPhone = "201-438-0606" });
         _context.TucClients.Add(new TucClient
         {

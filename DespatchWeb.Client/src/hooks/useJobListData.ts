@@ -28,6 +28,8 @@ export interface UseJobListDataResult {
     searchNotice: JobSearchNotice | null;
     isLoading: boolean;
     isFetching: boolean;
+    /** The last fetch failed, so an empty list says nothing about the jobs. */
+    isError: boolean;
     hasMore: boolean;
     params: JobListSearchParams;
     refresh: () => void;
@@ -44,6 +46,7 @@ const emptyResult: UseJobListDataResult = {
     searchNotice: null,
     isLoading: false,
     isFetching: false,
+    isError: false,
     hasMore: false,
     params: {} as JobListSearchParams,
     refresh: () => {},
@@ -68,7 +71,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         [fetchConfig, params],
     );
 
-    const {data, isLoading, isFetching, isPlaceholderData, hasNextPage, fetchNextPage, isFetchingNextPage} = useInfiniteQuery<JobSearchResult>({
+    const {data, isLoading, isFetching, isError, isPlaceholderData, hasNextPage, fetchNextPage, isFetchingNextPage} = useInfiniteQuery<JobSearchResult>({
         queryKey,
         queryFn: ({signal, pageParam}) => fetchConfig!.fetchFn({...params, page: pageParam as number}, {signal}),
         initialPageParam: 0,
@@ -147,6 +150,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         searchNotice,
         isLoading,
         isFetching,
+        isError,
         hasMore: hasNextPage ?? false,
         params,
         refresh,

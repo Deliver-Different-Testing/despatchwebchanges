@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import {
     SELECTED_VIEWS_KEY,
     DATE_FILTER_KEY,
+    DATE_MENU_PAGE,
     REFRESH_INTERVAL_KEY,
     DRIVER_LOCATION_REFRESH_KEY,
     TASK_REFRESH_KEY,
@@ -13,6 +14,7 @@ import {
     persistSelectedViews,
     resolveInitialViewSelection,
 } from './dispatchFilters';
+import {getContactId} from '../../../api/session';
 import {resolveInitialViewSelection as resolveInitialViewSelectionFromStorage} from '../../../utils/viewsFilterStorage';
 import type {DfrntPageViewModel} from '../../../types/interfaces/dfrnt-page-view-model.interface';
 
@@ -95,14 +97,26 @@ describe('dispatchFilters', () => {
 
         it('round-trips a concrete stored range', () => {
             localStorage.setItem(DATE_FILTER_KEY(), JSON.stringify({
-                startDate: '2025-02-01T00:00:00.000Z',
-                endDate: '2025-02-28T00:00:00.000Z',
+                startDate: '2099-02-01T00:00:00.000Z',
+                endDate: '2099-02-28T00:00:00.000Z',
                 useTime: true,
             }));
-            const {startDate, endDate, useTime} = loadDateFilter();
-            expect(startDate.format('YYYY-MM-DD')).toBe('2025-02-01');
-            expect(endDate.format('YYYY-MM-DD')).toBe('2025-02-28');
+            const {startDate, endDate, useTime} = loadDateFilter('UTC');
+            expect(startDate.utc().format('YYYY-MM-DD')).toBe('2099-02-01');
+            expect(endDate.utc().format('YYYY-MM-DD')).toBe('2099-02-28');
             expect(useTime).toBe(true);
+        });
+
+        it('loads all time in place of a stored range that has ended', () => {
+            localStorage.setItem(`dateRangeOption-${DATE_MENU_PAGE}-${getContactId()}`, 'custom_date');
+            localStorage.setItem(DATE_FILTER_KEY(), JSON.stringify({
+                startDate: '2025-02-01T00:00:00.000Z',
+                endDate: '2025-02-28T00:00:00.000Z',
+                useTime: false,
+            }));
+            const {startDate, expiredRange} = loadDateFilter('UTC');
+            expect(startDate.valueOf()).toBe(0);
+            expect(expiredRange?.endDate.toISOString()).toBe('2025-02-28T00:00:00.000Z');
         });
     });
 

@@ -155,13 +155,10 @@ export interface RouteOption {
     text: string;
 }
 
-/**
- * Recurring job list item model (transformed from DTO)
- */
-export interface PrebookListModel {
+interface PrebookListBase<TTime> {
     id: number;
-    booked: Dayjs;
-    nextDueTime?: Dayjs;
+    booked: TTime;
+    nextDueTime?: TTime;
     client: string;
     jobNo: string;
     clientId: number | null;
@@ -189,28 +186,14 @@ export interface PrebookListModel {
 }
 
 /**
+ * Recurring job list item model (transformed from DTO)
+ */
+export type PrebookListModel = PrebookListBase<Dayjs>;
+
+/**
  * Recurring job list item DTO (from backend)
  */
-export interface PrebookListModelDto {
-    id: number;
-    booked: string;
-    nextDueTime?: string;
-    client: string;
-    jobNo: string;
-    clientId: number | null;
-    courier: string;
-    speed: string;
-    customJobName?: string;
-    pickupAddress: AddressViewModel;
-    deliveryAddress: AddressViewModel;
-    routeId?: number | null;
-    routeName?: string | null;
-    recurringMode?: RecurringMode;
-    rawBaseAmount?: number | null;
-    fuelSurchargeAmount?: number | null;
-    ucbkAmount?: number | null;
-    isChild?: boolean;
-}
+export type PrebookListModelDto = PrebookListBase<string>;
 
 /**
  * Paginated response for recurring jobs

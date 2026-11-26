@@ -303,6 +303,7 @@ describe('useJobListData', () => {
             // Should return defaults when error occurs
             expect(result.current.jobs).toEqual([]);
             expect(result.current.totalCount).toBe(0);
+            await waitFor(() => expect(result.current.isError).toBe(true));
         });
     });
 
