@@ -29,6 +29,19 @@ public static class TimeZoneHelper
         return new DateTimeOffset(dateTime, offset);
     }
 
+    /// <summary>Converts a tenant-local wall-clock time to UTC; a time skipped by a DST change moves forward.</summary>
+    public static DateTime TenantLocalToUtc(DateTime local, string timeZone)
+    {
+        var tz = GetTimeZoneInfo(timeZone);
+        var unspecified = DateTime.SpecifyKind(local, DateTimeKind.Unspecified);
+        if (tz.IsInvalidTime(unspecified))
+        {
+            unspecified = unspecified.AddHours(1);
+        }
+
+        return TimeZoneInfo.ConvertTimeToUtc(unspecified, tz);
+    }
+
     private static TimeZoneInfo GetTimeZoneInfo(string timeZone)
     {
         if (string.IsNullOrWhiteSpace(timeZone))
