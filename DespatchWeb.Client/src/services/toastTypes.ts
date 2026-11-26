@@ -6,6 +6,8 @@
  * to know where the implementation lives (and without an import cycle).
  */
 
+import type {ReactNode} from 'react';
+
 /**
  * Types that {@link ShowToastFn} accepts. This is the narrow set the AngularJS
  * bridge and every external caller pass through. 'loading' is intentionally
@@ -19,6 +21,14 @@ export type ToastType = 'success' | 'warning' | 'error' | 'info';
 export interface ToastAction {
     label: string;
     onClick: () => void;
+    /** When set, the toast stays up as a busy indicator with this text instead of closing on click. */
+    busyLabel?: string;
+}
+
+/** Extra presentation for toasts that ask the user to act. */
+export interface PersistentToastOptions {
+    title?: string;
+    icon?: ReactNode;
 }
 
 /** Shared callback type for showing a toast notification */

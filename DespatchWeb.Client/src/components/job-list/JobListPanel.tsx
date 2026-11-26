@@ -747,7 +747,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     }, [multiSelect.selectCount, openBulkDispatch]);
 
     const handleBulkDispatchCourier = useCallback(async (
-        {type, destination, emailSubject, emailBody, resend}: DispatchConfirmation,
+        {type, destination, emailSubject, emailNote, resend}: DispatchConfirmation,
     ) => {
         const ids = selectedLiveJobIds();
         if (ids.length === 0) {
@@ -761,7 +761,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 // Server-side batches so one job failing its flight gate reports rather
                 // than aborting the rest — and so the agent email fires once per job.
                 const result = type === 'Agent'
-                    ? await assignAgentToJobs(ids, destination.id, false, emailSubject, emailBody, resend ?? false)
+                    ? await assignAgentToJobs(ids, destination.id, false, emailSubject, emailNote, resend ?? false)
                     : await assignNpAgentToJobs(ids, destination.id);
 
                 const noun = type === 'Agent' ? 'agent' : 'network partner';

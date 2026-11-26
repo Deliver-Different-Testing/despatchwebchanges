@@ -30,11 +30,12 @@ public class AppStartupTests(AppStartupTests.TestApp factory) : IClassFixture<Ap
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
+    // The real model build takes 15-60s+ on a loaded CI runner; the timeout is only a hang guard.
+    [Fact(Timeout = 300_000)]
     public async Task EfModelWarmup_RunsAtStartup_AndGatesReadiness()
     {
         var state = factory.Services.GetRequiredService<EfModelWarmupState>();
-        await state.Completion.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+        await state.Completion.WaitAsync(TestContext.Current.CancellationToken);
 
         var healthChecks = factory.Services.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value;
 

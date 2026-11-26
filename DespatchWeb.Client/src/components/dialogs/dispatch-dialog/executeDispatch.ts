@@ -42,7 +42,7 @@ export interface DispatchOutcome {
 
 export async function executeDispatchConfirmation(
     job: DispatchTargetJob,
-    {type, destination, emailSubject, emailBody, includeStopJobs, awb, resend}: DispatchConfirmation,
+    {type, destination, emailSubject, emailNote, includeStopJobs, awb, resend}: DispatchConfirmation,
 ): Promise<DispatchOutcome> {
     if (type === 'Agent') {
         if (!await canAssignAgentToJob(job.id)) {
@@ -50,7 +50,7 @@ export async function executeDispatchConfirmation(
         }
 
         const result = await assignAgentToJob(
-            job.id, destination.id, includeStopJobs ?? false, emailSubject, emailBody, resend ?? false,
+            job.id, destination.id, includeStopJobs ?? false, emailSubject, emailNote, resend ?? false,
         );
 
         // Sequenced after the assignment so a ConNote failure can't leave the job

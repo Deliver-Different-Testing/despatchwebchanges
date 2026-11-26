@@ -780,6 +780,14 @@ public partial class JobRepository
 
                 break;
             case JobProperty.ClientID:
+                // Same rule as the tucJobArchive_Update_BlockChanges trigger, which otherwise rolls the
+                // save back with a raw error: only Accounts may change an invoiced job's client.
+                if (archive.UcjbInvoiceNo is not (null or 0) && archive.OriginalInvoiceId is null)
+                {
+                    throw new ArchivedClientChangeException(
+                        $"Job {archive.UcjbNumber} has been invoiced, so its client can't be changed here. Ask Accounts to move it.");
+                }
+
                 var archiveClientId = int.Parse(value);
                 var clientCode = await ResolveClientCodeForEditAsync(archiveClientId);
 

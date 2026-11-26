@@ -23,7 +23,7 @@ public interface INationwideJobRepository
 
     /// <param name="resend">Send the agent alert even if this agent already has it for this job.</param>
     Task<AgentInboundEmailResult> AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false,
-        string? emailSubject = null, string? emailBody = null, bool resend = false);
+        string? emailSubject = null, string? emailNote = null, bool resend = false);
 
     /// <summary>
     /// Hands <paramref name="jobId"/> to a network partner by stamping
@@ -37,7 +37,7 @@ public interface INationwideJobRepository
     /// other error) is reported in the result rather than aborting the batch.
     /// </summary>
     Task<IReadOnlyList<BulkAssignmentResult>> AssignAgentToJobsAsync(int agentId, IReadOnlyList<int> jobIds,
-        bool includeStopJobs = false, string? emailSubject = null, string? emailBody = null, bool resend = false);
+        bool includeStopJobs = false, string? emailSubject = null, string? emailNote = null, bool resend = false);
 
     /// <summary>Assigns one network partner across many jobs, reporting per job.</summary>
     Task<IReadOnlyList<BulkAssignmentResult>> AssignNpAgentToJobsAsync(int npAgentId, IReadOnlyList<int> jobIds);
@@ -48,13 +48,21 @@ public interface INationwideJobRepository
     /// </summary>
     Task<AgentInboundEmailResult> GetAgentInboundEmailPreviewAsync(int agentId, int jobId);
 
+    /// <summary>
+    /// The agent alert for this leg as it would be sent: the tenant's template for the leg's alert type (or the
+    /// built-in default), every token filled, <paramref name="emailNote"/> shown above the message.
+    /// <paramref name="emailSubject"/> replaces the subject when not blank.
+    /// </summary>
+    Task<AgentAlertEmail> ComposeAgentAlertAsync(int agentId, int jobId, string? emailSubject = null,
+        string? emailNote = null);
+
     Task<IReadOnlyList<AirlineSuggestion>> GetActiveAirlineOptionsAsync();
     /// <summary>
     /// Queues the agent alert and its AgentAlertLog row in one transaction. Without <paramref name="resend"/> it sends
     /// nothing when this agent already has this alert for this job (<see cref="AgentInboundEmailStatus.AlreadySent"/>).
     /// </summary>
     Task<AgentInboundEmailStatus> SendAgentRequestMessageAsync(int agentId, int jobId, string? emailSubject = null,
-        string? emailBody = null, bool resend = false);
+        string? emailNote = null, bool resend = false);
     Task<IReadOnlyList<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task RestoreNationwideJobAsync(int jobId);
     Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm, bool? isNetworkPartner = null);

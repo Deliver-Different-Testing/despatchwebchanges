@@ -154,6 +154,99 @@ public sealed class MessageRepositoryRecentListTests : IAsyncDisposable
         Assert.Equal(1001, result[0].UnreadCount);
     }
 
+    private static readonly ConversationKey CourierConversation = new(CourierId, OtherMessagePartyType.Courier);
+    private static readonly ConversationKey StaffConversation = new(OtherStaffId, OtherMessagePartyType.Staff);
+
+    [Fact]
+    public async Task ArchiveConversationsAsync_HidesReadConversations_AndListsThemUnderArchived()
+    {
+        await SeedAsync(
+            Message(Now.AddHours(-3), "courier", fromCourier: CourierId, toStaff: StaffId, read: true),
+            Message(Now.AddHours(-2), "staff", fromStaff: StaffId, toStaff: OtherStaffId),
+            Message(Now.AddHours(-1), "keep", fromStaff: StaffId, toCourier: SecondCourierId));
+        var repository = CreateRepository();
+
+        var archived = await repository.ArchiveConversationsAsync([CourierConversation, StaffConversation]);
+
+        Assert.Equal([StaffConversation, CourierConversation], archived.OrderBy(k => k.OtherPartyType == OtherMessagePartyType.Courier));
+        Assert.Equal([SecondCourierId], (await repository.GetRecentListAsync()).Select(c => c.OtherPartyId));
+        Assert.Equal([OtherStaffId, CourierId], (await repository.GetRecentListAsync(archived: true)).Select(c => c.OtherPartyId));
+    }
+
+    [Fact]
+    public async Task ArchiveConversationsAsync_NewMessageAfterArchiving_BringsTheConversationBack()
+    {
+        await SeedAsync(Message(Now.AddHours(-2), "old", fromStaff: StaffId, toCourier: CourierId));
+        await CreateRepository().ArchiveConversationsAsync([CourierConversation]);
+
+        await using (var context = _db.CreateContext())
+        {
+            context.TucManualMessages.Add(Message(Now.AddHours(-1), "new", fromCourier: CourierId, toStaff: StaffId));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+        var conversation = Assert.Single(await repository.GetRecentListAsync());
+        Assert.Equal(("new", 1), (conversation.LastMessage, conversation.UnreadCount));
+        Assert.Empty(await repository.GetRecentListAsync(archived: true));
+    }
+
+    [Fact]
+    public async Task ArchiveConversationsAsync_SkipsConversationsWithUnreadIncomingMessages()
+    {
+        await SeedAsync(
+            Message(Now.AddHours(-2), "unread", fromCourier: CourierId, toStaff: StaffId),
+            Message(Now.AddHours(-1), "read", fromStaff: OtherStaffId, toStaff: StaffId, read: true));
+        var repository = CreateRepository();
+
+        var archived = await repository.ArchiveConversationsAsync([CourierConversation, StaffConversation]);
+
+        Assert.Equal([StaffConversation], archived);
+        Assert.Equal([CourierId], (await repository.GetRecentListAsync()).Select(c => c.OtherPartyId));
+    }
+
+    [Fact]
+    public async Task ArchiveConversationsAsync_RepeatedArchive_KeepsOneRowPerConversation()
+    {
+        await SeedAsync(Message(Now.AddHours(-1), "hi", fromStaff: StaffId, toCourier: CourierId));
+        var repository = CreateRepository();
+
+        await repository.ArchiveConversationsAsync([CourierConversation]);
+        var second = await repository.ArchiveConversationsAsync([CourierConversation, CourierConversation]);
+
+        Assert.Equal([CourierConversation], second);
+        await using var context = _db.CreateContext();
+        var row = Assert.Single(context.StaffConversationArchives);
+        Assert.Equal((StaffId, (byte)OtherMessagePartyType.Courier, CourierId),
+            (row.StaffId, row.OtherPartyType, row.OtherPartyId));
+    }
+
+    [Fact]
+    public async Task UnarchiveConversationsAsync_PutsTheConversationBackInTheList()
+    {
+        await SeedAsync(Message(Now.AddHours(-1), "hi", fromStaff: StaffId, toCourier: CourierId));
+        var repository = CreateRepository();
+        await repository.ArchiveConversationsAsync([CourierConversation]);
+
+        await repository.UnarchiveConversationsAsync([CourierConversation]);
+
+        Assert.Single(await repository.GetRecentListAsync());
+        Assert.Empty(await repository.GetRecentListAsync(archived: true));
+    }
+
+    [Fact]
+    public async Task ArchiveConversationsAsync_OnlyHidesTheConversationForTheCurrentStaffMember()
+    {
+        await SeedAsync(
+            Message(Now.AddHours(-2), "mine", fromStaff: StaffId, toCourier: CourierId),
+            Message(Now.AddHours(-1), "theirs", fromStaff: OtherStaffId, toCourier: CourierId));
+        await CreateRepository().ArchiveConversationsAsync([CourierConversation]);
+
+        _infoService.GetStaffId().Returns(OtherStaffId);
+
+        Assert.Equal([CourierId], (await CreateRepository().GetRecentListAsync()).Select(c => c.OtherPartyId));
+    }
+
     [Fact]
     public void LatestMessagePerPartner_TranslatesToAWindowedStatementOnSqlServer()
     {
@@ -167,5 +260,21 @@ public sealed class MessageRepositoryRecentListTests : IAsyncDisposable
             .ToQueryString();
 
         Assert.Contains("ROW_NUMBER", sql, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ConversationStatsQuery_TranslatesToOneGroupedStatementOnSqlServer()
+    {
+        var options = new DbContextOptionsBuilder<DespatchContext>()
+            .UseSqlServer("Server=unused;Database=unused")
+            .Options;
+        using var context = new DespatchContext(options);
+
+        var sql = MessageRepository.ConversationStatsQuery(
+                MessageRepository.PartnerMessages(context.TucManualMessages, StaffId, Now.AddDays(-90)))
+            .ToQueryString();
+
+        Assert.Contains("GROUP BY", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("MAX(", sql, StringComparison.OrdinalIgnoreCase);
     }
 }

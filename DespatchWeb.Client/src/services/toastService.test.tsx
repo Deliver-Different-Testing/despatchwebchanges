@@ -90,6 +90,53 @@ describe('toastService', () => {
         });
     });
 
+    describe('showPersistentToast', () => {
+        let dismiss: () => void = () => {};
+
+        afterEach(async () => {
+            await act(async () => dismiss());
+            await waitFor(() => {
+                expect(screen.queryByText('A new version is ready.')).not.toBeInTheDocument();
+                expect(screen.queryByText('Updating…')).not.toBeInTheDocument();
+            });
+        });
+
+        it('shows a titled toast that stays until its action is used', async () => {
+            await show(() => {
+                dismiss = toastService.showPersistentToast(
+                    'A new version is ready.',
+                    {label: 'Update now', onClick: vi.fn()},
+                    {title: 'Update available'},
+                );
+            });
+
+            expect(await screen.findByText('Update available')).toBeInTheDocument();
+            expect(screen.getByText('A new version is ready.')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Update now'})).toBeInTheDocument();
+        });
+
+        it('turns into a busy toast when the action has a busy label', async () => {
+            const onClick = vi.fn();
+            await show(() => {
+                dismiss = toastService.showPersistentToast(
+                    'A new version is ready.',
+                    {label: 'Update now', busyLabel: 'Updating…', onClick},
+                    {title: 'Update available'},
+                );
+            });
+
+            await act(async () => {
+                fireEvent.click(await screen.findByRole('button', {name: 'Update now'}));
+            });
+
+            expect(onClick).toHaveBeenCalledTimes(1);
+            expect(await screen.findByText('Updating…')).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Update now'})).not.toBeInTheDocument();
+            // Still closable, in case the work behind the action never finishes.
+            expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
+        });
+    });
+
     describe('toast dismissal', () => {
         it('closes the toast when the close button is clicked', async () => {
             await show(() => toastService.showSuccessToast('Success message'));
