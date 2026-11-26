@@ -857,7 +857,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         await SeedStatusUpdatesAsync(update);
         var service = CreateService();
-        return await service.GetDeliveryJourneyForJobAsync(1);
+        return await service.GetDeliveryJourneyForJobAsync(update.JobId);
     }
 
     private async Task SeedCouriersAsync(params TucCourier[] couriers)
@@ -1272,7 +1272,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1293,7 +1293,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1313,7 +1313,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1333,7 +1333,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1357,7 +1357,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange - the tucJob_InsertJob trigger writes this row on insert.
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1387,7 +1387,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Arrange - inserter SP didn't tag the session context, so the trigger
         // stored the "(unknown)" fallback.
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1411,7 +1411,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1436,7 +1436,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1460,7 +1460,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1483,7 +1483,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1511,7 +1511,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             UcstId = 5, UcstFirstName = "Jane", UcstLastName = "Doe", CreatedBy = "test", LastModifiedBy = "test"
         });
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1538,7 +1538,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             new TucStaff { UcstId = 5, UcstFirstName = "Jane", UcstLastName = "Doe", CreatedBy = "test", LastModifiedBy = "test" },
             new TucStaff { UcstId = 8, UcstFirstName = "John", UcstLastName = "Roe", CreatedBy = "test", LastModifiedBy = "test" });
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1562,7 +1562,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Arrange - staff id has no matching tucStaff row (e.g. deleted staff);
         // the service should keep the raw id rather than dropping the value.
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1722,7 +1722,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1746,7 +1746,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1808,7 +1808,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1832,7 +1832,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         // Arrange - unknown camelCase field should use ConvertToTitleCase fallback
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -1879,7 +1879,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         await SeedPricingBreakdownsAsync(
             new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 100m },
             new PricingBreakdown { PricingBreakdownId = 2, JobId = 1, ChargeName = "Fuel", ChargeAmount = 15m });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,
@@ -2085,7 +2085,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
         await SeedPricingBreakdownsAsync(
             new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 50m });
-        // Act
+        // Arrange + Act: seed the update, then read its job's journey
         var result = await SeedStatusUpdateAndGetJourneyAsync(new JobDeliveryJourney
         {
             JourneyId = 1,

@@ -566,31 +566,31 @@ public class CourierController(
     [HttpPost]
     public Task<IActionResult> ExportTodayActiveDriversCsv([FromBody] TodayActiveDriversFilterRequest request)
     {
-        return ExportCsvAsync(() => courierReportService.GenerateTodayActiveDriversCsvAsync(request), nameof(ExportTodayActiveDriversCsv), true);
+        return ExportCsvAsync(() => courierReportService.GenerateTodayActiveDriversCsvAsync(request), nameof(ExportTodayActiveDriversCsv), mapInvalidQuery: true);
     }
 
     [HttpPost]
     public Task<IActionResult> ExportComplianceCsv([FromBody] CourierComplianceFilterRequest request)
     {
-        return ExportCsvAsync(() => courierReportService.GenerateComplianceCsvAsync(request), nameof(ExportComplianceCsv), true);
+        return ExportCsvAsync(() => courierReportService.GenerateComplianceCsvAsync(request), nameof(ExportComplianceCsv), mapInvalidQuery: true);
     }
 
     [HttpPost]
     public Task<IActionResult> ExportAfterHoursScheduleCsv([FromBody] CourierAfterHoursFilterRequest request)
     {
-        return ExportCsvAsync(() => courierReportService.GenerateAfterHoursScheduleCsvAsync(request), nameof(ExportAfterHoursScheduleCsv), true);
+        return ExportCsvAsync(() => courierReportService.GenerateAfterHoursScheduleCsvAsync(request), nameof(ExportAfterHoursScheduleCsv), mapInvalidQuery: true);
     }
 
     [HttpPost]
     public Task<IActionResult> ExportDriverEmailsCsv([FromBody] PaginatedRequest request)
     {
-        return ExportCsvAsync(() => courierReportService.GenerateDriverEmailsCsvAsync(request), nameof(ExportDriverEmailsCsv), false);
+        return ExportCsvAsync(() => courierReportService.GenerateDriverEmailsCsvAsync(request), nameof(ExportDriverEmailsCsv), mapInvalidQuery: false);
     }
 
     [HttpPost]
     public Task<IActionResult> ExportDriverEarningsCsv([FromBody] PaginatedRequest request)
     {
-        return ExportCsvAsync(() => courierReportService.GenerateDriverEarningsCsvAsync(request), nameof(ExportDriverEarningsCsv), true);
+        return ExportCsvAsync(() => courierReportService.GenerateDriverEarningsCsvAsync(request), nameof(ExportDriverEarningsCsv), mapInvalidQuery: true);
     }
 
     private async Task<IActionResult> ExportCsvAsync(
