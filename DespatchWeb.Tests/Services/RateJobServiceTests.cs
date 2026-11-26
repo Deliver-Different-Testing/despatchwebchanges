@@ -230,12 +230,8 @@ public class RateJobServiceTests : IDisposable
         Task Act() => service.RateJobUsAsync(jobDetails);
     }
 
-    [Fact]
-    public async Task RateJobUsAsync_NonFlightSpeed_CallsRateJobUsWithTotalMiles()
+    private async Task<(RateJobUsDto? CapturedDto, JobRatingDetailsDto JobDetails)> RateNonFlightWithHereResponseAsync(string hereResponse)
     {
-        // Arrange - non-flight speed (GroupingId = 1, which is SpeedGrouping.Excelerator)
-        const string hereResponse =
-            """{"routes":[{"sections":[{"transport":{"mode":"car"},"summary":{"length":16093}}]}]}""";
         var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
 
         SetupNonFlightSpeed();
@@ -252,8 +248,18 @@ public class RateJobServiceTests : IDisposable
 
         var service = CreateService(httpClient);
 
-        // Act
         await service.RateJobUsAsync(jobDetails);
+        return (capturedDto, jobDetails);
+    }
+
+    [Fact]
+    public async Task RateJobUsAsync_NonFlightSpeed_CallsRateJobUsWithTotalMiles()
+    {
+        // Arrange - non-flight speed (GroupingId = 1, which is SpeedGrouping.Excelerator)
+        const string hereResponse =
+            """{"routes":[{"sections":[{"transport":{"mode":"car"},"summary":{"length":16093}}]}]}""";
+        // Act
+        var (capturedDto, jobDetails) = await RateNonFlightWithHereResponseAsync(hereResponse);
 
         // Assert
         await _jobCommandRepositoryMock.Received().RateJobUsAsync(Arg.Any<RateJobUsDto>());
@@ -308,24 +314,8 @@ public class RateJobServiceTests : IDisposable
                                         }]
                                     }
                                     """;
-        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
-
-        SetupNonFlightSpeed();
-
-        RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
-            .Returns(callInfo =>
-            {
-                capturedDto = callInfo.Arg<RateJobUsDto>();
-                return Task.CompletedTask;
-            });
-
-        var jobDetails = CreateValidUsJobDetails();
-
-        var service = CreateService(httpClient);
-
         // Act
-        await service.RateJobUsAsync(jobDetails);
+        var (capturedDto, jobDetails) = await RateNonFlightWithHereResponseAsync(hereResponse);
 
         // Assert - only car sections summed: 16093 + 16093 = 32186 meters = ~20 miles
         Assert.NotNull(capturedDto);
@@ -721,24 +711,8 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange - route response with no sections
         const string hereResponse = """{"routes":[{"sections":[]}]}""";
-        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
-
-        SetupNonFlightSpeed();
-
-        RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
-            .Returns(callInfo =>
-            {
-                capturedDto = callInfo.Arg<RateJobUsDto>();
-                return Task.CompletedTask;
-            });
-
-        var jobDetails = CreateValidUsJobDetails();
-
-        var service = CreateService(httpClient);
-
         // Act
-        await service.RateJobUsAsync(jobDetails);
+        var (capturedDto, jobDetails) = await RateNonFlightWithHereResponseAsync(hereResponse);
 
         // Assert
         Assert.NotNull(capturedDto);
@@ -750,24 +724,8 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange - route response with null routes
         const string hereResponse = """{"routes":null}""";
-        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
-
-        SetupNonFlightSpeed();
-
-        RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
-            .Returns(callInfo =>
-            {
-                capturedDto = callInfo.Arg<RateJobUsDto>();
-                return Task.CompletedTask;
-            });
-
-        var jobDetails = CreateValidUsJobDetails();
-
-        var service = CreateService(httpClient);
-
         // Act
-        await service.RateJobUsAsync(jobDetails);
+        var (capturedDto, jobDetails) = await RateNonFlightWithHereResponseAsync(hereResponse);
 
         // Assert
         Assert.NotNull(capturedDto);
@@ -779,24 +737,8 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange
         const string hereResponse = """{"routes":[]}""";
-        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
-
-        SetupNonFlightSpeed();
-
-        RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
-            .Returns(callInfo =>
-            {
-                capturedDto = callInfo.Arg<RateJobUsDto>();
-                return Task.CompletedTask;
-            });
-
-        var jobDetails = CreateValidUsJobDetails();
-
-        var service = CreateService(httpClient);
-
         // Act
-        await service.RateJobUsAsync(jobDetails);
+        var (capturedDto, jobDetails) = await RateNonFlightWithHereResponseAsync(hereResponse);
 
         // Assert
         Assert.NotNull(capturedDto);

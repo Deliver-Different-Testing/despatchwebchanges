@@ -1,4 +1,5 @@
 using DespatchWeb.Models.RequestModels;
+using TestArchivedJob = DespatchWeb.Tests.Repositories.VoidTestJob;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -8,79 +9,11 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryVoidArchivedTests
 {
-    /// <summary>
-    /// Represents a simplified archived job structure for testing parent-child relationships.
-    /// </summary>
-    private class TestArchivedJob
-    {
-        public int Id { get; init; }
-        public int? ParentId { get; init; }
-    }
+    private static List<int> DetermineArchivedJobsToVoid(VoidJobRequest data, List<TestArchivedJob> allJobs) =>
+        VoidJobSelectionLogic.DetermineToVoid(data, allJobs);
 
-    /// <summary>
-    /// Mimics the GetArchivedJobWithChildrenAsync logic from JobRepository.
-    /// Returns the archived job ID along with all its children IDs (if any).
-    /// </summary>
-    private static List<int> GetArchivedJobWithChildren(int jobId, List<TestArchivedJob> allJobs)
-    {
-        var childIds = allJobs
-            .Where(j => j.ParentId == jobId)
-            .Select(j => j.Id)
-            .ToList();
-
-        childIds.Add(jobId);
-        return childIds;
-    }
-
-    /// <summary>
-    /// Mimics the GetAllRelatedArchivedJobIdsIncludingParentAsync logic from JobRepository.
-    /// Returns all related archived job IDs including parent and siblings.
-    /// </summary>
-    private static List<int> GetAllRelatedArchivedJobIdsIncludingParent(int jobId, List<TestArchivedJob> allJobs)
-    {
-        var job = allJobs.FirstOrDefault(j => j.Id == jobId);
-        if (job == null)
-        {
-            return [];
-        }
-
-        List<int> relatedJobIds;
-        if (job.ParentId.HasValue)
-        {
-            // Get siblings (children of the same parent)
-            relatedJobIds = allJobs
-                .Where(j => j.ParentId == job.ParentId)
-                .Select(j => j.Id)
-                .ToList();
-            relatedJobIds.Add(job.ParentId.Value);
-        }
-        else
-        {
-            // Get children
-            relatedJobIds = allJobs
-                .Where(j => j.ParentId == jobId)
-                .Select(j => j.Id)
-                .ToList();
-            relatedJobIds.Add(jobId);
-        }
-
-        return relatedJobIds;
-    }
-
-    /// <summary>
-    /// Mimics the archived job selection logic from VoidArchivedJobAsync.
-    /// </summary>
-    private static List<int> DetermineArchivedJobsToVoid(VoidJobRequest data, List<TestArchivedJob> allJobs)
-    {
-        if (data.SelectedJobIds is { Count: > 0 })
-        {
-            return data.SelectedJobIds;
-        }
-
-        return data.VoidSingleJobOnly
-            ? GetArchivedJobWithChildren(data.JobId, allJobs)
-            : GetAllRelatedArchivedJobIdsIncludingParent(data.JobId, allJobs);
-    }
+    private static List<int> GetArchivedJobWithChildren(int jobId, List<TestArchivedJob> allJobs) =>
+        VoidJobSelectionLogic.GetWithChildren(jobId, allJobs);
 
     [Fact]
     public void DetermineArchivedJobsToVoid_VoidSingleJobOnly_ParentWithChildren_VoidsParentAndAllChildren()
