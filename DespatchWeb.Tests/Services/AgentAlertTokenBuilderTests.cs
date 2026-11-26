@@ -32,6 +32,9 @@ public class AgentAlertTokenBuilderTests : IAsyncDisposable
             .Returns(c => c.Arg<DateTime?>()?.ToString("g", CultureInfo.GetCultureInfo("en-US")) ?? string.Empty);
     }
 
+    // ICU (Linux CI) puts U+202F before AM/PM; Windows NLS uses a plain space.
+    private static string Us(DateTime value, string format) => value.ToString(format, CultureInfo.GetCultureInfo("en-US"));
+
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
@@ -200,8 +203,8 @@ public class AgentAlertTokenBuilderTests : IAsyncDisposable
         Assert.Equal("R2", t["ClientRefB"]);
         Assert.Equal("CN-1", t["ConNote"]);
         Assert.Equal("11/19/2026", t["Date"]);
-        Assert.Equal("9:30 AM", t["Time"]);
-        Assert.Equal("11/19/2026 1:00 PM", t["DeliverByTime"]);
+        Assert.Equal(Us(new DateTime(1899, 12, 30, 9, 30, 0), "t"), t["Time"]);
+        Assert.Equal(Us(new DateTime(2026, 11, 19, 13, 0, 0), "g"), t["DeliverByTime"]);
         Assert.Equal("201-438-0606", t["DispatchPhone"]);
         Assert.Equal(Link, t["InboundUrl"]);
     }
@@ -256,7 +259,7 @@ public class AgentAlertTokenBuilderTests : IAsyncDisposable
         Assert.Equal("UA220", t["FlightNumber"]);
         Assert.Equal("016-99999999", t["WaybillNumber"]);
         Assert.Equal("Chicago", t["FromSuburbCity"]);
-        Assert.Equal("11/19/2026 9:00 PM", t["FlightETA"]);
+        Assert.Equal(Us(new DateTime(2026, 11, 19, 21, 0, 0), "g"), t["FlightETA"]);
     }
 
     [Fact]
