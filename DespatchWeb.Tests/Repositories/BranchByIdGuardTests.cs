@@ -10,6 +10,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
+using DespatchWeb.Tests.Helpers;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -19,14 +20,8 @@ namespace DespatchWeb.Tests.Repositories;
 /// procedures, raw edits, note history) must refuse a branch-limited caller for anything they cannot see, and must not
 /// change anything for everyone else.
 /// </summary>
-public class BranchByIdGuardTests : IAsyncDisposable
+public class BranchByIdGuardTests : BranchScopedDbTest
 {
-    private const int Sydney = 1;
-    private const int Melbourne = 2;
-    private const int SydneySite = 43;
-    private const int MelbourneSite = 44;
-
-    private readonly SqliteTestDatabase _db = new();
     private readonly IDespatchContextProcedures _procedures = Substitute.For<IDespatchContextProcedures>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
@@ -53,14 +48,6 @@ public class BranchByIdGuardTests : IAsyncDisposable
     private static void SetOutput<T>(OutputParameter<T>? parameter, T value) =>
         typeof(OutputParameter<T>).GetMethod("SetValue", BindingFlags.NonPublic | BindingFlags.Instance)!
             .Invoke(parameter, [value]);
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private static ScopeContext Staff(int[]? branchIds, bool defaultBranchInScope = false, int[]? siteIds = null) =>
         new(ClientTypeId: (int)ClientType.Tenant, ClientId: 1, NpAgentId: null,
@@ -90,32 +77,6 @@ public class BranchByIdGuardTests : IAsyncDisposable
         Substitute.For<ICourierRepository>(), Substitute.For<ISuburbResolver>());
 
     private NoteRepository NoteRepo(ScopeContext scope) => new(FactoryFor(scope), _tenantInfo, _clock);
-
-    private async Task Seed(params object[] rows)
-    {
-        await using var seed = _db.CreateContext();
-        seed.AddRange(rows);
-        await seed.SaveChangesAsync(Ct);
-    }
-
-    private static TucClient Client(int id, int? branchId) => new()
-    {
-        UcclId = id, UcclName = $"Client {id}", UcclLegalName = "L", Smsname = "S", UcclCode = $"C{id}", UcclAddress = "1 St",
-        UcclExtraAddress = "", UcclPostal = "", UcclPostCode = "0", UcclPhone = "", UcclPhone2 = "", UcclMobile = "", UcclFax = "",
-        UcclType = "", Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T",
-        ClientTypeId = (int)ClientType.Customer, BranchId = branchId
-    };
-
-    private static TucCourier Courier(int id, int? branchId) => new()
-    {
-        UccrId = id, Code = $"R{id}", UccrName = $"Courier{id}", UccrSurname = "X", UccrEmail = $"{id}@t.com", UccrMobile = "1",
-        Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T", BranchId = branchId
-    };
-
-    private static TucJob Job(int id, int? client = null, int? courier = null) => new()
-    {
-        UcjbId = id, UcjbNumber = $"J{id}", UcjbClientId = client, UcjbCourierId = courier
-    };
 
     // Client 10 / courier 100 are Sydney's, client 20 / courier 200 are Melbourne's; job 1 is Melbourne's, job 2 Sydney's.
     private Task SeedWorld() => Seed(

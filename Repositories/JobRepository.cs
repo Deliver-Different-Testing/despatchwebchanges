@@ -3103,104 +3103,8 @@ public partial class JobRepository(
     {
         var isUsCustomer = _infoService.IsUsTenant();
 
-        var bulkJob = await (
-                from j in Context.TblBulkJobs
-                join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
-                from courier in courierJoin.DefaultIfEmpty()
-                join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
-                from speed in speedJoin.DefaultIfEmpty()
-                join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
-                from status in statusJoin.DefaultIfEmpty()
-                join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
-                from readTracker in rtJoin.DefaultIfEmpty()
-                join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
-                from vehicleSize in vsJoin.DefaultIfEmpty()
-                join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
-                from client in clientJoin.DefaultIfEmpty()
-                where j.BulkJobId == bulkJobId
-                select new DispatchJobViewModel
-                {
-                    Id = j.BulkJobId,
-                    HasBeenRead = readTracker != null && readTracker.HasBeenRead,
-                    IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
-                    ParentId = j.ParentId,
-
-                    IsFlightJob = speed != null
-                                  && speed.GroupingId == (isUsCustomer
-                                      ? (int)SpeedGrouping.Flight
-                                      : (int)UrgentSpeedGrouping.Flight),
-                    IsAgentJob = speed != null
-                                 && speed.GroupingId == (isUsCustomer
-                                     ? (int)SpeedGrouping.Agent
-                                     : (int)UrgentSpeedGrouping.NationwideAgent),
-
-                    Vehicle = vehicleSize != null
-                        ? new Suggestion
-                        {
-                            Id = vehicleSize.VehicleSizeId,
-                            Text = vehicleSize.VehicleName
-                        }
-                        : null,
-
-                    Time = j.BookTime,
-                    ClientId = j.ClientId,
-                    Client = j.ClientCode,
-                    ClientName = client != null ? client.UcclName : string.Empty,
-                    PickupAddress = new AddressViewModel
-                    {
-                        AddressLine1 = j.PickupAddressLine1,
-                        AddressLine2 = j.PickupAddressLine2,
-                        AddressLine3 = j.PickupAddressLine3,
-                        AddressLine4 = j.PickupAddressLine4,
-                        AddressLine5 = j.PickupAddressLine5,
-                        AddressLine6 = j.PickupAddressLine6,
-                        AddressLine7 = j.PickupAddressLine7,
-                        AddressLine8 = j.PickupAddressLine8,
-                        Latitude = !string.IsNullOrEmpty(j.PickUpLatitude)
-                            ? decimal.Parse(j.PickUpLatitude)
-                            : null,
-                        Longitude = !string.IsNullOrEmpty(j.PickUpLongitude)
-                            ? decimal.Parse(j.PickUpLongitude)
-                            : null
-                    },
-                    DeliveryAddress = new AddressViewModel
-                    {
-                        AddressLine1 = j.DeliveryAddressLine1,
-                        AddressLine2 = j.DeliveryAddressLine2,
-                        AddressLine3 = j.DeliveryAddressLine3,
-                        AddressLine4 = j.DeliveryAddressLine4,
-                        AddressLine5 = j.DeliveryAddressLine5,
-                        AddressLine6 = j.DeliveryAddressLine6,
-                        AddressLine7 = j.DeliveryAddressLine7,
-                        AddressLine8 = j.DeliveryAddressLine8,
-                        Latitude = !string.IsNullOrEmpty(j.DeliveryLatitude)
-                            ? decimal.Parse(j.DeliveryLatitude)
-                            : null,
-                        Longitude = !string.IsNullOrEmpty(j.DeliveryLongitude)
-                            ? decimal.Parse(j.DeliveryLongitude)
-                            : null
-                    },
-                    JobNo = j.JobNumber,
-                    Courier = courier != null ? courier.Code : null,
-                    StatusId = j.JobStatus,
-                    Status = status != null ? status.UcjsCode : null,
-                    StatusName = status != null ? status.UcjsName : null,
-                    Void = j.Void,
-                    Released = j.Done,
-                    Done = j.Job != null && j.Job.UcjbJobDone,
-                    CompletedTime = j.Job != null ? j.Job.UcjbComplTime : null,
-                    Speed = speed != null ? speed.ShortName : null,
-                    SpeedId = j.Speed,
-                    Booked = new DateTime(
-                        j.BookDate.Year,
-                        j.BookDate.Month,
-                        j.BookDate.Day,
-                        j.BookTime.Hour,
-                        j.BookTime.Minute,
-                        j.BookTime.Second
-                    ),
-                    IsBulkJob = true
-                })
+        var bulkJob = await JoinBulkJobLookups(Context.TblBulkJobs.Where(j => j.BulkJobId == bulkJobId))
+            .Select(ToBulkDispatchJob(isUsCustomer))
             .FirstOrDefaultAsync();
 
         return bulkJob;
@@ -3222,20 +3126,7 @@ public partial class JobRepository(
             ? Context.TblBulkJobs.Where(JobWildcardSearch.BulkJobMatches($"%{data.Wild}%"))
             : Context.TblBulkJobs;
 
-        var query = from j in bulkJobRows
-            join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
-            from courier in courierJoin.DefaultIfEmpty()
-            join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
-            from speed in speedJoin.DefaultIfEmpty()
-            join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
-            from status in statusJoin.DefaultIfEmpty()
-            join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
-            from readTracker in rtJoin.DefaultIfEmpty()
-            join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
-            from vehicleSize in vsJoin.DefaultIfEmpty()
-            join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
-            from client in clientJoin.DefaultIfEmpty()
-            where
+        var query = JoinBulkJobLookups(bulkJobRows.Where(j =>
                 !Context.TucJobs.Any(tj => tj.UcjbId == j.JobId && tj.RouteId != null)
                 && (
                     data.BulkJobIdSet
@@ -3246,91 +3137,12 @@ public partial class JobRepository(
                           && (!data.CourierSet || (j.CourierId.HasValue && data.CourierIds.Contains(j.CourierId.Value)))
                           && (!data.SpeedSet || data.SpeedIds.Contains(j.Speed))
                           && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), $"%{jobSearch}%"))
-                )
-            orderby j.BookDate, j.BookTime, j.JobId, j.BulkJobId
-            select new DispatchJobViewModel
-            {
-                Id = j.BulkJobId,
-                HasBeenRead = readTracker != null && readTracker.HasBeenRead,
-                IsParentOrSingle = !j.ParentId.HasValue || j.ParentId == j.JobId,
-                ParentId = j.ParentId,
-
-                IsFlightJob = speed != null
-                              && speed.GroupingId == (isUsCustomer
-                                  ? (int)SpeedGrouping.Flight
-                                  : (int)UrgentSpeedGrouping.Flight),
-                IsAgentJob = speed != null
-                             && speed.GroupingId == (isUsCustomer
-                                 ? (int)SpeedGrouping.Agent
-                                 : (int)UrgentSpeedGrouping.NationwideAgent),
-
-                Vehicle = vehicleSize != null
-                    ? new Suggestion
-                    {
-                        Id = vehicleSize.VehicleSizeId,
-                        Text = vehicleSize.VehicleName
-                    }
-                    : null,
-
-                Time = j.BookTime,
-                ClientId = j.ClientId,
-                Client = j.ClientCode,
-                ClientName = client != null ? client.UcclName : string.Empty,
-                PickupAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.PickupAddressLine1,
-                    AddressLine2 = j.PickupAddressLine2,
-                    AddressLine3 = j.PickupAddressLine3,
-                    AddressLine4 = j.PickupAddressLine4,
-                    AddressLine5 = j.PickupAddressLine5,
-                    AddressLine6 = j.PickupAddressLine6,
-                    AddressLine7 = j.PickupAddressLine7,
-                    AddressLine8 = j.PickupAddressLine8,
-                    Latitude = !string.IsNullOrEmpty(j.PickUpLatitude)
-                        ? decimal.Parse(j.PickUpLatitude)
-                        : null,
-                    Longitude = !string.IsNullOrEmpty(j.PickUpLongitude)
-                        ? decimal.Parse(j.PickUpLongitude)
-                        : null
-                },
-                DeliveryAddress = new AddressViewModel
-                {
-                    AddressLine1 = j.DeliveryAddressLine1,
-                    AddressLine2 = j.DeliveryAddressLine2,
-                    AddressLine3 = j.DeliveryAddressLine3,
-                    AddressLine4 = j.DeliveryAddressLine4,
-                    AddressLine5 = j.DeliveryAddressLine5,
-                    AddressLine6 = j.DeliveryAddressLine6,
-                    AddressLine7 = j.DeliveryAddressLine7,
-                    AddressLine8 = j.DeliveryAddressLine8,
-                    Latitude = !string.IsNullOrEmpty(j.DeliveryLatitude)
-                        ? decimal.Parse(j.DeliveryLatitude)
-                        : null,
-                    Longitude = !string.IsNullOrEmpty(j.DeliveryLongitude)
-                        ? decimal.Parse(j.DeliveryLongitude)
-                        : null
-                },
-                JobNo = j.JobNumber,
-                Courier = courier != null ? courier.Code : null,
-                StatusId = j.JobStatus,
-                Status = status != null ? status.UcjsCode : null,
-                StatusName = status != null ? status.UcjsName : null,
-                Void = j.Void,
-                Released = j.Done,
-                Done = j.Job != null && j.Job.UcjbJobDone,
-                CompletedTime = j.Job != null ? j.Job.UcjbComplTime : null,
-                Speed = speed != null ? speed.ShortName : null,
-                SpeedId = j.Speed,
-                Booked = new DateTime(
-                    j.BookDate.Year,
-                    j.BookDate.Month,
-                    j.BookDate.Day,
-                    j.BookTime.Hour,
-                    j.BookTime.Minute,
-                    j.BookTime.Second
-                ),
-                IsBulkJob = true
-            };
+                )))
+            .OrderBy(r => r.Job.BookDate)
+            .ThenBy(r => r.Job.BookTime)
+            .ThenBy(r => r.Job.JobId)
+            .ThenBy(r => r.Job.BulkJobId)
+            .Select(ToBulkDispatchJob(isUsCustomer));
 
         const int maxBulkSearchRows = 5000;
         var allResults = await query
@@ -3366,6 +3178,127 @@ public partial class JobRepository(
             StatusCounts = JobListStatusCounts.FromJobs(distinctResults)
         };
     }
+
+    private sealed class BulkJobRow
+    {
+        public TblBulkJob Job { get; init; }
+        public TblCourier Courier { get; init; }
+        public TucJobType Speed { get; init; }
+        public TucJobStatus Status { get; init; }
+        public TucJobReadTracker ReadTracker { get; init; }
+        public VehicleSize VehicleSize { get; init; }
+        public TucClient Client { get; init; }
+    }
+
+    private IQueryable<BulkJobRow> JoinBulkJobLookups(IQueryable<TblBulkJob> bulkJobs) =>
+        from j in bulkJobs
+        join c in Context.TblCouriers on j.CourierId equals c.CourierId into courierJoin
+        from courier in courierJoin.DefaultIfEmpty()
+        join t in Context.TucJobTypes on j.Speed equals t.UcjtId into speedJoin
+        from speed in speedJoin.DefaultIfEmpty()
+        join s in Context.TucJobStatuses on j.JobStatus equals s.UcjsId into statusJoin
+        from status in statusJoin.DefaultIfEmpty()
+        join rt in Context.TucJobReadTrackers on j.JobId equals rt.JobId into rtJoin
+        from readTracker in rtJoin.DefaultIfEmpty()
+        join vs in Context.VehicleSizes on j.Size equals vs.VehicleSizeId into vsJoin
+        from vehicleSize in vsJoin.DefaultIfEmpty()
+        join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
+        from client in clientJoin.DefaultIfEmpty()
+        select new BulkJobRow
+        {
+            Job = j,
+            Courier = courier,
+            Speed = speed,
+            Status = status,
+            ReadTracker = readTracker,
+            VehicleSize = vehicleSize,
+            Client = client
+        };
+
+    private static Expression<Func<BulkJobRow, DispatchJobViewModel>> ToBulkDispatchJob(bool isUsCustomer) =>
+        r => new DispatchJobViewModel
+        {
+            Id = r.Job.BulkJobId,
+            HasBeenRead = r.ReadTracker != null && r.ReadTracker.HasBeenRead,
+            IsParentOrSingle = !r.Job.ParentId.HasValue || r.Job.ParentId == r.Job.JobId,
+            ParentId = r.Job.ParentId,
+
+            IsFlightJob = r.Speed != null
+                          && r.Speed.GroupingId == (isUsCustomer
+                              ? (int)SpeedGrouping.Flight
+                              : (int)UrgentSpeedGrouping.Flight),
+            IsAgentJob = r.Speed != null
+                         && r.Speed.GroupingId == (isUsCustomer
+                             ? (int)SpeedGrouping.Agent
+                             : (int)UrgentSpeedGrouping.NationwideAgent),
+
+            Vehicle = r.VehicleSize != null
+                ? new Suggestion
+                {
+                    Id = r.VehicleSize.VehicleSizeId,
+                    Text = r.VehicleSize.VehicleName
+                }
+                : null,
+
+            Time = r.Job.BookTime,
+            ClientId = r.Job.ClientId,
+            Client = r.Job.ClientCode,
+            ClientName = r.Client != null ? r.Client.UcclName : string.Empty,
+            PickupAddress = new AddressViewModel
+            {
+                AddressLine1 = r.Job.PickupAddressLine1,
+                AddressLine2 = r.Job.PickupAddressLine2,
+                AddressLine3 = r.Job.PickupAddressLine3,
+                AddressLine4 = r.Job.PickupAddressLine4,
+                AddressLine5 = r.Job.PickupAddressLine5,
+                AddressLine6 = r.Job.PickupAddressLine6,
+                AddressLine7 = r.Job.PickupAddressLine7,
+                AddressLine8 = r.Job.PickupAddressLine8,
+                Latitude = !string.IsNullOrEmpty(r.Job.PickUpLatitude)
+                    ? decimal.Parse(r.Job.PickUpLatitude)
+                    : null,
+                Longitude = !string.IsNullOrEmpty(r.Job.PickUpLongitude)
+                    ? decimal.Parse(r.Job.PickUpLongitude)
+                    : null
+            },
+            DeliveryAddress = new AddressViewModel
+            {
+                AddressLine1 = r.Job.DeliveryAddressLine1,
+                AddressLine2 = r.Job.DeliveryAddressLine2,
+                AddressLine3 = r.Job.DeliveryAddressLine3,
+                AddressLine4 = r.Job.DeliveryAddressLine4,
+                AddressLine5 = r.Job.DeliveryAddressLine5,
+                AddressLine6 = r.Job.DeliveryAddressLine6,
+                AddressLine7 = r.Job.DeliveryAddressLine7,
+                AddressLine8 = r.Job.DeliveryAddressLine8,
+                Latitude = !string.IsNullOrEmpty(r.Job.DeliveryLatitude)
+                    ? decimal.Parse(r.Job.DeliveryLatitude)
+                    : null,
+                Longitude = !string.IsNullOrEmpty(r.Job.DeliveryLongitude)
+                    ? decimal.Parse(r.Job.DeliveryLongitude)
+                    : null
+            },
+            JobNo = r.Job.JobNumber,
+            Courier = r.Courier != null ? r.Courier.Code : null,
+            StatusId = r.Job.JobStatus,
+            Status = r.Status != null ? r.Status.UcjsCode : null,
+            StatusName = r.Status != null ? r.Status.UcjsName : null,
+            Void = r.Job.Void,
+            Released = r.Job.Done,
+            Done = r.Job.Job != null && r.Job.Job.UcjbJobDone,
+            CompletedTime = r.Job.Job != null ? r.Job.Job.UcjbComplTime : null,
+            Speed = r.Speed != null ? r.Speed.ShortName : null,
+            SpeedId = r.Job.Speed,
+            Booked = new DateTime(
+                r.Job.BookDate.Year,
+                r.Job.BookDate.Month,
+                r.Job.BookDate.Day,
+                r.Job.BookTime.Hour,
+                r.Job.BookTime.Minute,
+                r.Job.BookTime.Second
+            ),
+            IsBulkJob = true
+        };
 
     /// <summary>
     /// Retrieves job data for CSV/Excel download with full details including addresses, pricing, and courier info.

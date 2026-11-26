@@ -15,13 +15,11 @@ export interface IJobGroup {
     relatedJobs: IJob[];
 }
 
-export interface IJob {
+/** Fields whose wire and client shapes are identical; IJob and IJobDto add the ones that differ. */
+interface IJobCommon {
     id: number;
     rootParentId?: number;
-    parentId?: number;
     hasBeenRead: boolean;
-    time?: Dayjs;
-    bookedDate?: Dayjs;
     direct?: boolean;
     van: boolean;
     jobRelationshipTypeId?: number;
@@ -104,12 +102,8 @@ export interface IJob {
     sigNotRequired: string;
     charge: number;
     date: string;
-    dispatchTime?: Dayjs;
-    booked: Dayjs;
-    puTime?: Dayjs;
     clientNotes: string;
     internalNotes: string;
-    followupTime?: Dayjs;
     internalStatusId?: number;
     childNotes: string;
     locked?: boolean;
@@ -138,11 +132,9 @@ export interface IJob {
     dgClass?: number;
     displaySplitJobDetail?: boolean;
     truckWeightLimit?: number;
-    truckStartTime?: Dayjs;
     truckHours?: number;
     privateRes?: boolean;
     allowSplit?: boolean;
-    completedTime?: Dayjs;
     fromContactName: string;
     fromContactNumber: string;
     fromContactNumberSource?: string;
@@ -159,18 +151,11 @@ export interface IJob {
     airportOnly?: boolean;
     hasNationwide?: boolean;
     dispatcherName: string;
-    createdDate?: Dayjs;
     pickupAddress: IAddressViewModel;
     deliveryAddress: IAddressViewModel;
     toAirportId?: number;
     fromAirportId?: number;
-    // Speed-grouping classification (mirrors live jobs). Gates the flight UI.
-    isFlightJob?: boolean;
     isAgentJob?: boolean;
-    // Recurring flight: complete flight number (e.g. "NZ123") saved against the
-    // booking so the same flight auto-assigns on each push-to-live.
-    savedFlightNumber?: string;
-    assignedFlight?: IAssignedFlight;
     assignedAgent?: IAgent;
     assignedCourier?: ISuggestion;
     parcelDimensions: IParcelDimensions[];
@@ -179,27 +164,9 @@ export interface IJob {
     isArchived: boolean;
     clientColor?: string;
     searchText?: string;
-    deliverByTime?: Dayjs;
     distance: number;
-    readTrackerInfo?: IReadTrackerInfo;
     inActiveBy?: ISuggestion;
-    inActiveDate?: Dayjs;
-    firstDue?: Dayjs;
-    nextDue?: Dayjs;
-    lastDone?: Dayjs;
-    stopDate?: Dayjs;
-    restartDate?: Dayjs;
     active?: boolean;
-    daysOfWeek?: DaysOfWeek
-    frequency?: Frequency;
-    holidayDeliveryOption: HolidayDeliveryOptions,
-    // Create-ahead offset (days). Backed by tucJobBooking.RecurringInitialDays.
-    // Drives uspPrebookSet's @TargetDate = today + N. Raising the value
-    // triggers CreateAheadBackfillDialog. Zero / null = legacy same-day push.
-    recurringInitialDays?: number;
-    // Recurring Route assignment. Null when not assigned to any route.
-    // Cascades through booking tree on update via JobProperty.RouteId.
-    routeId?: number | null;
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
     pickUpTimeZone: ISuggestion;
@@ -210,14 +177,51 @@ export interface IJob {
     tailLiftPu: boolean;
     tailLiftDo: boolean;
     deliverToPrivateRes: boolean;
-    deliverToPrivateResString: string;
     bookingSource?: ISuggestion;
     isInvoiced: boolean;
     barcode?: string;
-    pickupArrivalTime?: Dayjs;
-    deliveryArrivalTime?: Dayjs;
     isFlightAssigned: boolean;
     isAgentAssigned: boolean;
+}
+
+export interface IJob extends IJobCommon {
+    parentId?: number;
+    time?: Dayjs;
+    bookedDate?: Dayjs;
+    dispatchTime?: Dayjs;
+    booked: Dayjs;
+    puTime?: Dayjs;
+    followupTime?: Dayjs;
+    truckStartTime?: Dayjs;
+    completedTime?: Dayjs;
+    createdDate?: Dayjs;
+    // Speed-grouping classification (mirrors live jobs). Gates the flight UI.
+    isFlightJob?: boolean;
+    // Recurring flight: complete flight number (e.g. "NZ123") saved against the
+    // booking so the same flight auto-assigns on each push-to-live.
+    savedFlightNumber?: string;
+    assignedFlight?: IAssignedFlight;
+    deliverByTime?: Dayjs;
+    readTrackerInfo?: IReadTrackerInfo;
+    inActiveDate?: Dayjs;
+    firstDue?: Dayjs;
+    nextDue?: Dayjs;
+    lastDone?: Dayjs;
+    stopDate?: Dayjs;
+    restartDate?: Dayjs;
+    daysOfWeek?: DaysOfWeek
+    frequency?: Frequency;
+    holidayDeliveryOption: HolidayDeliveryOptions,
+    // Create-ahead offset (days). Backed by tucJobBooking.RecurringInitialDays.
+    // Drives uspPrebookSet's @TargetDate = today + N. Raising the value
+    // triggers CreateAheadBackfillDialog. Zero / null = legacy same-day push.
+    recurringInitialDays?: number;
+    // Recurring Route assignment. Null when not assigned to any route.
+    // Cascades through booking tree on update via JobProperty.RouteId.
+    routeId?: number | null;
+    deliverToPrivateResString: string;
+    pickupArrivalTime?: Dayjs;
+    deliveryArrivalTime?: Dayjs;
     accessorialChargeGroupId?: number;
 
     // Private variables
@@ -242,177 +246,27 @@ export interface IJob {
     _restartDateStr?: string;
 }
 
-export interface IJobDto {
-    id: number;
-    rootParentId?: number;
-    hasBeenRead: boolean;
+export interface IJobDto extends IJobCommon {
     time?: string;
     bookedDate?: string;
-    direct?: boolean;
-    van: boolean;
-    jobRelationshipTypeId?: number;
-    vanOk?: boolean;
-    done?: boolean;
-    void?: boolean;
-    truck?: boolean;
-    saturdayDelivery?: boolean;
-    return?: boolean;
-    pedal?: boolean;
-    reprice?: boolean;
-    attention?: boolean;
-    pickupFrom?: number;
-    jobNo: string;
-    speed: string;
-    speedName: string;
-    source: string;
-    notifiedName: string;
-    acceptedName: string;
-    speedId?: number;
-    notify: string;
-    vehicle: ISuggestion;
-    clientId?: number;
-    jobType?: number;
-    jobTypeDescription?: string;
-    client: string;
-    clientName: string;
-    from: string;
-    fromSuburbId?: number;
-    fromSuburbName: string;
-    fromPostCode: string;
-    fromAddress: string;
-    to: string;
-    toSuburbId?: number;
-    toSuburbName: string;
-    toPostCode: string;
-    toAddress: string;
-    toCity: string;
-    courier: string;
-    gstRate?: number;
-    remain?: number;
-    pickupTime?: number;
-    deliveryTime?: number;
-    alertLatePickup?: number;
-    alertLateDelivery?: number;
-    minutes?: number;
-    statusId?: number;
-    /** The server's single resolved status. Render from this, not from statusId + done + void. */
-    resolvedStatusId?: number;
-    resolvedIsVoid?: boolean;
-    resolvedIsComplete?: boolean;
-    /** Bulk rows only: pushed to live dispatch. Distinct from `done`, which means delivered. */
-    released?: boolean;
-    status: string;
-    statusName: string;
-    lp?: number;
-    ld?: number;
-    contactName: string;
-    loggedInContactName: string;
-    deliverToContact: string;
-    trackingMethod?: number;
-    trackingMobile: string;
-    trackingEmail: string;
-    bookingContactEmail?: string;
-    udStatus: string;
-    podPhoto: Uint8Array;
-    deliverySignature: Uint8Array;
-    podPhotos: Uint8Array[];
-    podName: string;
-    toContactPhone: string;
-    speedAccepted: string;
-    acceptedJobTypeId?: number;
-    notifiedJobTypeId?: number;
-    size: ISuggestion;
-    weight?: number;
-    items?: number;
-    refA: string;
-    refB: string;
-    ourRef: string;
-    sigNotRequired: string;
-    charge: number;
-    date: string;
     dispatchTime?: string;
     booked: string;
     puTime?: string;
-    clientNotes: string;
-    internalNotes: string;
     followupTime?: string;
-    internalStatusId?: number;
-    childNotes: string;
-    locked?: boolean;
-    isPartnerJob?: boolean;
-    /** Name of the OTHER tenant on a partner pairing — populated for sender + receiver. */
-    partnerTenantName?: string | null;
-    /**
-     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
-     * payloads so the backend can disambiguate when a tenant has multiple active
-     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
-     */
-    partnerPairingId?: number | null;
-    invoiced?: boolean;
-    pickUpLongitude?: number;
-    pickUpLatitude?: number;
-    deliveryLongitude?: number;
-    deliveryLatitude?: number;
-    palletInfo: IPalletInfo[];
-    relatedJobs: ISuggestion[];
-    courierLatitude?: number;
-    courierLongitude?: number;
-    runOrder?: number;
-    courierData: ICourierData;
-    allowDispatch?: boolean;
-    dgDocumentation?: boolean;
-    dgClass?: number;
-    displaySplitJobDetail?: boolean;
-    truckWeightLimit?: number;
     truckStartTime?: string;
-    truckHours?: number;
-    privateRes?: boolean;
-    allowSplit?: boolean;
     completedTime?: string;
-    fromContactName: string;
-    fromContactNumber: string;
-    fromContactNumberSource?: string;
-    ratedManually?: boolean;
-    sizeId?: number;
-    oneOff?: boolean;
-    preBook: boolean;
-    isBulkJob: boolean;
-    /** The live job id behind a bulk row, whose own `id` is a BulkJobId. */
-    linkedJobId?: number;
-    runName: string;
-    scheduleName: string;
-    conNote: string;
-    airportOnly?: boolean;
-    hasNationwide?: boolean;
-    dispatcherName: string;
     createdDate?: string;
-    pickupAddress: IAddressViewModel;
-    deliveryAddress: IAddressViewModel;
-    toAirportId?: number;
-    fromAirportId?: number;
     isFlightJob?: boolean;
-    isAgentJob?: boolean;
     savedFlightNumber?: string;
     assignedFlight?: IAssignedFlightDto;
-    assignedAgent?: IAgent;
-    assignedCourier?: ISuggestion;
-    parcelDimensions: IParcelDimensions[];
-    deliverToLeaveId?: number;
-    isActive: boolean;
-    isArchived: boolean;
-    clientColor?: string;
-    searchText?: string;
     deliverByTime?: string;
-    distance: number;
     readTrackerInfo?: IReadTrackerInfoDto;
-    inActiveBy?: ISuggestion;
     inActiveDate?: string;
     firstDue?: string;
     nextDue?: string;
     lastDone?: string;
     stopDate?: string;
     restartDate?: string;
-    active?: boolean;
     daysOfWeek?: number;
     frequency?: number;
     holidayDeliveryOption: number;
@@ -422,23 +276,8 @@ export interface IJobDto {
     // Recurring Route assignment from JobRecurringMapping. Null when
     // unassigned. dtoMappings maps this to IJob.routeId.
     routeId?: number | null;
-    pickUpWindowMins?: number;
-    deliverByWindowMins?: number;
-    pickUpTimeZone: ISuggestion;
-    deliveryTimeZone: ISuggestion;
-    hasDgDocsString?: string;
-    calculateDimsOncePerJob: boolean;
-    customJobName?: string;
-    tailLiftPu: boolean;
-    tailLiftDo: boolean;
-    deliverToPrivateRes: boolean;
-    bookingSource?: ISuggestion;
-    isInvoiced: boolean;
-    barcode?: string;
     pickupArrivalTime?: string;
     deliveryArrivalTime?: string;
-    isFlightAssigned: boolean;
-    isAgentAssigned: boolean;
 }
 
 interface UpdateJobPackagesBase {

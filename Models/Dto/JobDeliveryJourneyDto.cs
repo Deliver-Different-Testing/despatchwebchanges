@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public sealed record JobDeliveryJourneyDto
+public sealed record JobDeliveryJourneyDto : IJobDeliveryJourneyEntry
 {
     public int Id { get; init; }
     public DateTime UpdatedAt { get; init; }
