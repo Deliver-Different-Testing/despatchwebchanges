@@ -15,39 +15,13 @@ namespace DespatchWeb.Tests.Repositories;
 /// "Completed" from the status list left the flags saying the job had never been delivered. Both
 /// combinations render as one thing on the grid and another in job properties.
 /// </summary>
-public class JobRepositoryStatusCoherenceTests : IAsyncDisposable
+public class JobRepositoryStatusCoherenceTests : JobRepositoryTestBase
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    public JobRepositoryStatusCoherenceTests()
+    public JobRepositoryStatusCoherenceTests() : base(1)
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _tenantInfoServiceMock.GetStaffId().Returns(1);
         _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(Arg.Any<TimeZone>()).Returns(TestDates.Now);
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     [Fact]
     public async Task UpdateJobAsync_UnTickingDelivered_ClearsTheCompletedStatusAndTime()

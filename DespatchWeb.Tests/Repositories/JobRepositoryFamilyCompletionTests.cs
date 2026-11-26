@@ -15,41 +15,14 @@ namespace DespatchWeb.Tests.Repositories;
 /// live, and completing the parent then both misreports the family and — because the POD message is
 /// raised off the parent in the SQL layer — texts the customer before their freight has arrived.
 /// </summary>
-public class JobRepositoryFamilyCompletionTests : IAsyncDisposable
+public class JobRepositoryFamilyCompletionTests : JobRepositoryTestBase
 {
     private const int ParentId = 100;
 
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
-
-    public JobRepositoryFamilyCompletionTests()
+    public JobRepositoryFamilyCompletionTests() : base(1)
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _tenantInfoServiceMock.GetStaffId().Returns(1);
         _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(Arg.Any<TimeZone>()).Returns(TestDates.Now);
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     [Fact]
     public async Task UpdatePodDetailsAsync_LastLinehaulLegDelivered_LeavesTheParentOpenUntilDel()
