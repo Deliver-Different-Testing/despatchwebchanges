@@ -38,17 +38,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(rawBaseAmount: 150.50m)
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("Raw Base Amount", csvContent);
         Assert.Contains("150.50", csvContent);
     }
@@ -61,17 +55,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(fuelSurchargeAmount: 25.75m)
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("Fuel Surcharge Amount", csvContent);
         Assert.Contains("25.75", csvContent);
     }
@@ -84,17 +72,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(rawBaseAmount: 100.00m, fuelSurchargeAmount: 15.00m)
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("100", csvContent);
         Assert.Contains("15", csvContent);
     }
@@ -152,17 +134,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(podName: "John Smith")
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("POD Name", csvContent);
         Assert.Contains("John Smith", csvContent);
     }
@@ -175,17 +151,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucjbType: "Pick up from us")
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("Type", csvContent);
         Assert.Contains("Pick up from us", csvContent);
     }
@@ -198,17 +168,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(chargeExclGst: "250.00")
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("Charge Excl GST", csvContent);
         Assert.Contains("250.00", csvContent);
     }
@@ -242,17 +206,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucjbFromAddr: "123 Pickup Street")
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("From Address", csvContent);
         Assert.Contains("123 Pickup Street", csvContent);
     }
@@ -265,17 +223,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(uccrName: "Express Courier")
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("Courier Name", csvContent);
         Assert.Contains("Express Courier", csvContent);
     }
@@ -288,17 +240,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucjbClientId: "12345")
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("Account No.", csvContent);
         Assert.Contains("12345", csvContent);
     }
@@ -311,17 +257,11 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucclNote: "Important client note")
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         Assert.Contains("Client Notes", csvContent);
         Assert.Contains("Important client note", csvContent);
     }
@@ -404,17 +344,11 @@ public class ClientJobsReportCsvTests
                 UcclNote = "Client note"
             }
         };
-        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
-            .Returns(reports);
-
-        var service = CreateService();
-        var request = CreateTestRequest();
 
         // Act
-        var result = await service.GenerateClientJobsReportCsvAsync(request);
+        var csvContent = await GenerateCsvAsync(reports);
 
         // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(2, lines.Length); // Header + 1 data row
 
@@ -441,18 +375,25 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(rawBaseAmount: amount)
         };
+
+        // Act
+        var csvContent = await GenerateCsvAsync(reports);
+
+        // Assert
+        Assert.Contains(amount.ToString(CultureInfo.InvariantCulture), csvContent);
+    }
+
+    private async Task<string> GenerateCsvAsync(List<PerformanceSpendReportModel> reports)
+    {
         _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
             .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
 
-        // Act
         var result = await service.GenerateClientJobsReportCsvAsync(request);
 
-        // Assert
-        var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        Assert.Contains(amount.ToString(CultureInfo.InvariantCulture), csvContent);
+        return Encoding.UTF8.GetString(result.FileBytes);
     }
 
     private static ClientJobsReportRequest CreateTestRequest()

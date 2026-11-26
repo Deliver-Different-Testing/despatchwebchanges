@@ -51,6 +51,23 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _clock
     );
 
+    private sealed class ManualPriceCapture
+    {
+        public IReadOnlyList<JobManualPriceModel>? Models { get; set; }
+    }
+
+    private ManualPriceCapture CaptureManualPriceUpdates()
+    {
+        var capture = new ManualPriceCapture();
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capture.Models = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return capture.Models!.Select(m => m.Id).ToHashSet();
+            });
+        return capture;
+    }
+
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_EmptyFile_ReturnsEmptyResponse()
     {
@@ -255,13 +272,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 150m)
             .Returns(175m); // 150 base + 25 fuel = 175 total
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -276,9 +287,9 @@ public class RateJobServiceBulkPriceTests : IDisposable
         // Verify UpdateManualPriceAsync was called with correct values
         await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
 
-        Assert.NotNull(capturedModels);
-        Assert.Single(capturedModels!);
-        var model = capturedModels[0];
+        Assert.NotNull(capture.Models);
+        Assert.Single(capture.Models!);
+        var model = capture.Models[0];
         Assert.Equal(1, model.Id);
         Assert.Equal(175m, model.Amount);
         Assert.Equal(150m, model.RawBaseAmount);
@@ -317,13 +328,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 150m)
             .Returns(175m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -334,8 +339,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
         await _jobQueryRepositoryMock.Received().GetTotalAmountFromBaseAsync(1, 150m);
         Assert.Equal(175m, result.Rows[0].NewAmount);
 
-        Assert.NotNull(capturedModels);
-        var model = capturedModels![0];
+        Assert.NotNull(capture.Models);
+        var model = capture.Models![0];
         Assert.Equal(175m, model.Amount);
         Assert.Equal(150m, model.RawBaseAmount);
         Assert.Equal(25m, model.Fuel); // 175 - 150 = 25, i.e. fuel is applied
@@ -434,13 +439,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
             .Returns(115m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -448,8 +447,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
         await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - courier values from file should override existing values
-        Assert.NotNull(capturedModels);
-        var model = capturedModels![0];
+        Assert.NotNull(capture.Models);
+        var model = capture.Models![0];
         Assert.Equal(75m, model.CourierPayment); // From file
         Assert.Equal(10m, model.CourierFuel); // From file
         Assert.Equal(5m, model.CourierBonus); // From file
@@ -486,13 +485,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobCommandRepositoryMock.RepriceJobWithBaseAmountAsync(Arg.Any<RepriceJobWithBaseAmountModel>())
             .Returns(230m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -503,9 +496,9 @@ public class RateJobServiceBulkPriceTests : IDisposable
         Assert.Equal(2, result.Rows.Count);
 
         // UpdateManualPriceAsync should only contain the non-prebook job
-        Assert.NotNull(capturedModels);
-        Assert.Single(capturedModels!);
-        Assert.Equal(1, capturedModels[0].Id);
+        Assert.NotNull(capture.Models);
+        Assert.Single(capture.Models!);
+        Assert.Equal(1, capture.Models[0].Id);
 
         // RepriceJobWithBaseAmountAsync should be called for prebook job
         await _jobCommandRepositoryMock.Received().RepriceJobWithBaseAmountAsync(
@@ -533,13 +526,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 0m)
             .Returns(0m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -548,9 +535,9 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Assert
         Assert.Equal(0m, result.Rows[0].NewAmount);
-        Assert.NotNull(capturedModels);
-        Assert.Equal(0m, capturedModels![0].RawBaseAmount);
-        Assert.Equal(0m, capturedModels[0].Amount);
+        Assert.NotNull(capture.Models);
+        Assert.Equal(0m, capture.Models![0].RawBaseAmount);
+        Assert.Equal(0m, capture.Models[0].Amount);
     }
 
     [Fact]
@@ -577,13 +564,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(2, 200m).Returns(230m);
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(3, 300m).Returns(345m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -592,14 +573,14 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Assert - all 3 jobs should be batched in one call
         await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
-        Assert.NotNull(capturedModels);
-        Assert.Equal(3, capturedModels!.Count);
-        Assert.Equivalent(Expected, capturedModels.Select(m => m.Id));
+        Assert.NotNull(capture.Models);
+        Assert.Equal(3, capture.Models!.Count);
+        Assert.Equivalent(Expected, capture.Models.Select(m => m.Id));
 
         // Verify fuel calculations
-        Assert.Equal(15m, capturedModels.First(m => m.Id == 1).Fuel); // 115 - 100
-        Assert.Equal(30m, capturedModels.First(m => m.Id == 2).Fuel); // 230 - 200
-        Assert.Equal(45m, capturedModels.First(m => m.Id == 3).Fuel); // 345 - 300
+        Assert.Equal(15m, capture.Models.First(m => m.Id == 1).Fuel); // 115 - 100
+        Assert.Equal(30m, capture.Models.First(m => m.Id == 2).Fuel); // 230 - 200
+        Assert.Equal(45m, capture.Models.First(m => m.Id == 3).Fuel); // 345 - 300
     }
 
     [Fact]
@@ -629,13 +610,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
             .Returns(115m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -643,8 +618,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
         await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - CourierPayment from file, others from existing
-        Assert.NotNull(capturedModels);
-        var model = capturedModels![0];
+        Assert.NotNull(capture.Models);
+        var model = capture.Models![0];
         Assert.Equal(80m, model.CourierPayment); // From file
         Assert.Equal(10m, model.CourierFuel); // From existing
         Assert.Equal(5m, model.CourierBonus); // From existing
@@ -703,13 +678,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
             .Returns(115m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -717,8 +686,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
         await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - Ppd should be 0, not from file or existing
-        Assert.NotNull(capturedModels);
-        Assert.Equal(0m, capturedModels![0].Ppd);
+        Assert.NotNull(capture.Models);
+        Assert.Equal(0m, capture.Models![0].Ppd);
     }
 
     [Fact]
@@ -771,13 +740,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
             .Returns(100m);
 
-        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
-            .Returns(callInfo =>
-            {
-                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
-                return capturedModels!.Select(m => m.Id).ToHashSet();
-            });
+        var capture = CaptureManualPriceUpdates();
 
         var service = CreateService();
 
@@ -785,10 +748,10 @@ public class RateJobServiceBulkPriceTests : IDisposable
         await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert
-        Assert.NotNull(capturedModels);
-        Assert.Equal(100m, capturedModels![0].Amount);
-        Assert.Equal(100m, capturedModels[0].RawBaseAmount);
-        Assert.Equal(0m, capturedModels[0].Fuel); // No fuel surcharge
+        Assert.NotNull(capture.Models);
+        Assert.Equal(100m, capture.Models![0].Amount);
+        Assert.Equal(100m, capture.Models[0].RawBaseAmount);
+        Assert.Equal(0m, capture.Models[0].Fuel); // No fuel surcharge
     }
 
     [Fact]
