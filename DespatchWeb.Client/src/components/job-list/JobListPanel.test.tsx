@@ -397,6 +397,19 @@ describe('JobListPanel', () => {
             expect(screen.getByRole('radio', {name: 'Done'})).toBeChecked();
         });
 
+        it('blames the tab, not the dates, when the dates returned jobs the tab hides', async () => {
+            await renderWithJobs(assignedJobs(), {
+                dateEmptyState: {title: 'No jobs in these dates', message: 'The date filter is set to 21/Nov.', actionText: 'Show all dates', onAction: vi.fn()},
+            });
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
+            await waitForJobsLoaded();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+
+            expect(screen.getByText('No Done jobs')).toBeInTheDocument();
+            expect(screen.queryByText('No jobs in these dates')).not.toBeInTheDocument();
+        });
+
         it('says the tab is hiding the rows and offers Show all, instead of claiming there are none', async () => {
             await renderWithJobs(assignedJobs());
 
@@ -1847,5 +1860,80 @@ describe('JobListPanel job search notices', () => {
 
         expect(await screen.findByText('Search too broad')).toBeInTheDocument();
         expect(screen.queryByTestId('job-search-match-bar')).not.toBeInTheDocument();
+    });
+
+    describe('an empty list held to a date range', () => {
+        const dateEmptyState = (onAction = vi.fn()) => ({
+            title: 'No jobs in these dates',
+            message: 'The date filter is set to 21/Nov to 23/Nov.',
+            actionText: 'Show all dates',
+            onAction,
+        });
+
+        it('says the dates are why and offers to show all dates', async () => {
+            const onAction = vi.fn();
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig: noticeFetchConfig({}), dateEmptyState: dateEmptyState(onAction),
+            })}/>);
+
+            expect(await screen.findByText('The date filter is set to 21/Nov to 23/Nov.')).toBeInTheDocument();
+            await setupUser().click(screen.getByRole('button', {name: 'Show all dates'}));
+            expect(onAction).toHaveBeenCalledTimes(1);
+        });
+
+        it('keeps saying so while a background poll runs', async () => {
+            const fetchConfig = {
+                ...noticeFetchConfig({}),
+                refetchInterval: 50,
+                fetchFn: vi.fn()
+                    .mockResolvedValueOnce({jobs: [], totalCount: 0, hasMore: false})
+                    .mockReturnValue(new Promise(() => {})),
+            };
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig, dateEmptyState: dateEmptyState(),
+            })}/>);
+            expect(await screen.findByText('No jobs in these dates')).toBeInTheDocument();
+
+            await waitFor(() => expect(fetchConfig.fetchFn).toHaveBeenCalledTimes(2));
+
+            expect(screen.getByText('No jobs in these dates')).toBeInTheDocument();
+        });
+
+        it('does not blame the dates when the fetch failed', async () => {
+            const fetchConfig = {...noticeFetchConfig({}), fetchFn: vi.fn().mockRejectedValue(new Error('down'))};
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig, dateEmptyState: dateEmptyState(),
+            })}/>);
+
+            await waitFor(() => expect(fetchConfig.fetchFn).toHaveBeenCalled());
+            await waitFor(() => expect(screen.getByText('No jobs found')).toBeInTheDocument());
+            expect(screen.queryByText('No jobs in these dates')).not.toBeInTheDocument();
+        });
+
+        it('keeps one status region mounted so the empty result is announced when it arrives', async () => {
+            // A live region announces changes to its text, not its own arrival.
+            await renderWithJobs([createMockDispatchJob({id: 1, jobNo: 'ROW-1'})], {dateEmptyState: dateEmptyState()});
+
+            expect(screen.getByRole('status')).toBeEmptyDOMElement();
+        });
+
+        it('announces the empty result as a status', async () => {
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig: noticeFetchConfig({}), dateEmptyState: dateEmptyState(),
+            })}/>);
+
+            expect(await screen.findByRole('status')).toHaveTextContent('No jobs in these dates');
+        });
+
+        it('yields to a job search notice', async () => {
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.JobSearch,
+                fetchConfig: noticeFetchConfig({searchNotice: notice({searchTooBroad: true})}),
+                dateEmptyState: dateEmptyState(),
+            })}/>);
+
+            expect(await screen.findByText('Search too broad')).toBeInTheDocument();
+            expect(screen.queryByText('Show all dates')).not.toBeInTheDocument();
+        });
     });
 });

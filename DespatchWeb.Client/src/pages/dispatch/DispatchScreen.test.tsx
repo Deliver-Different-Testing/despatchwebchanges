@@ -8,6 +8,8 @@ import {createDefaultDispatchLayout} from './lib/boxDefinitions';
 import {testDialogs} from '../../components/dialogs/testDialogRegistry';
 vi.mock('../../components/dialogs/dialogRegistry', async () => (await import('../../components/dialogs/testDialogRegistry')).createDialogRegistryMock());
 
+const dayjsValueOf = (iso: string) => new Date(iso).valueOf();
+
 const pageProps = vi.fn();
 const bridge = {
     setCurrentLayoutName: vi.fn(),
@@ -219,5 +221,34 @@ describe('DispatchScreen', () => {
             showTaskRefresh: true,
             showCourierDisplayMode: true,
         });
+    });
+
+    it('drops a saved custom range that has ended, says so once and loads all time', async () => {
+        const {toastService} = await import('../../services/toastService');
+        localStorage.setItem('dateRangeOption-home-7', 'custom_date');
+        localStorage.setItem('dateFilter-1-7', JSON.stringify({
+            startDate: '2020-11-21T00:00:00.000Z', endDate: '2020-11-23T00:00:00.000Z', useTime: false,
+        }));
+
+        renderScreen();
+
+        await waitFor(() => expect(toastService.showToast).toHaveBeenCalledWith(
+            expect.stringContaining('has ended. Showing all dates.'), 'info', undefined,
+        ));
+        expect(toastService.showToast).toHaveBeenCalledTimes(1);
+        expect(dayjsValueOf(JSON.parse(localStorage.getItem('dateFilter-1-7')!).startDate)).toBe(0);
+    });
+
+    it('resets the date filter to all time when the list asks to show all dates', async () => {
+        localStorage.setItem('dateFilter-1-7', JSON.stringify({
+            startDate: '2099-11-21T00:00:00.000Z', endDate: '2099-11-23T00:00:00.000Z', useTime: false,
+        }));
+        renderScreen();
+        await waitFor(() => expect(bridge.updateFilters).toHaveBeenCalled());
+
+        act(() => pageProps.mock.calls.at(-1)![0].onShowAllDates());
+
+        expect(bridge.updateFilters.mock.calls.at(-1)![0].startDate.valueOf()).toBe(0);
+        expect(dayjsValueOf(JSON.parse(localStorage.getItem('dateFilter-1-7')!).startDate)).toBe(0);
     });
 });

@@ -10,6 +10,7 @@ import {DispatchPage, type DispatchLayoutBridge} from './DispatchPage';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './lib/boxDefinitions';
 import {
     DATE_FILTER_KEY,
+    DATE_MENU_PAGE,
     DRIVER_LOCATION_REFRESH_KEY,
     REFRESH_INTERVAL_KEY,
     TASK_REFRESH_KEY,
@@ -25,6 +26,9 @@ import {getSession} from '../../api/session';
 import {toastService} from '../../services/toastService';
 import {showPageToast} from '../pageToasts';
 import {requireDialog} from '../../components/dialogs/dialogRegistry';
+import {getIanaTimezone} from '../../utils/dateUtils';
+import {expiredRangeMessage} from '../../utils/dateRangeSummary';
+import setDateFilterDefaults from '../../utils/setDateFilterDefaults';
 
 const DEFAULT_TIME_ZONE = 'New Zealand Standard Time';
 
@@ -51,7 +55,12 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
     }), [contactId]);
     const defaultLayout = useMemo(() => createDefaultDispatchLayout(), []);
 
-    const [dateFilter, setDateFilter] = useDateFilter(DATE_FILTER_KEY(), loadDateFilter);
+    const ianaTimeZone = getIanaTimezone(timeZone);
+    const [dateFilter, setDateFilter] = useDateFilter(
+        DATE_FILTER_KEY(),
+        () => loadDateFilter(ianaTimeZone),
+        (range) => showPageToast(expiredRangeMessage(range, {isUs: isUsCustomer}), 'info'),
+    );
     const dateFilterRef = useRef(dateFilter);
     dateFilterRef.current = dateFilter;
 
@@ -122,12 +131,16 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
         }
     };
 
-    const refreshDateFilter = (next: DateFilterData) => {
+    const refreshDateFilter = useCallback((next: DateFilterData) => {
         const value = {startDate: next.startDate, endDate: next.endDate, useTime: next.useTime ?? false};
         dateFilterRef.current = value;
         setDateFilter(value);
         pushFilters();
-    };
+    }, [setDateFilter, pushFilters]);
+    const showAllDates = useCallback(
+        () => refreshDateFilter(setDateFilterDefaults(ianaTimeZone)),
+        [refreshDateFilter, ianaTimeZone],
+    );
 
     const toolbarActions: ToolbarActionsConfig = {
         settings: {onClick: () => void openSettings()},
@@ -145,7 +158,7 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
             columnEditMode,
             onToggleColumnEditMode: toggleColumnEditMode,
         }),
-        dateFilter: {data: dateFilter, appPage: 'home', timeZone, onRefreshData: refreshDateFilter},
+        dateFilter: {data: dateFilter, appPage: DATE_MENU_PAGE, timeZone, onRefreshData: refreshDateFilter},
         actionsMenu: {
             onCreateNewJob: () => void createNewJob(),
             onInterCourierCharge: () => bridgeRef.current?.openInterCourierCharge(),
@@ -162,6 +175,7 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
                     deepLinkJobId={deepLinkJobId}
                     onExitColumnEditMode={handleExitColumnEditMode}
                     onLayoutBridgeReady={handleBridgeReady}
+                    onShowAllDates={showAllDates}
                 />
             </ErrorBoundary>
         </PageFrame>
