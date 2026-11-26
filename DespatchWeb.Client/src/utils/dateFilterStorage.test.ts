@@ -6,7 +6,8 @@
  */
 
 import dayjs from 'dayjs';
-import {loadDateFilterFrom, saveDateFilterTo} from './dateFilterStorage';
+import {getContactId} from '../api/session';
+import {isAllTimeStart, loadDateFilterFrom, saveDateFilterTo} from './dateFilterStorage';
 
 const KEY = 'dateFilter-test';
 const MARCH_3 = dayjs('2026-03-03T12:00:00');
@@ -98,7 +99,6 @@ describe('saveDateFilterTo / loadDateFilterFrom', () => {
     });
 
     describe('a custom range that has already ended', () => {
-        // Ralph (OTG) saved 21-23 Nov and on 25 Nov saw an empty Dispatch on every load.
         const NZ = 'Pacific/Auckland';
         const storeRange = (start: string, end: string) => localStorage.setItem(KEY, JSON.stringify({
             startDate: dayjs.tz(start, NZ).toISOString(),
@@ -137,22 +137,51 @@ describe('saveDateFilterTo / loadDateFilterFrom', () => {
             expect(loaded.expiredRange).toBeUndefined();
         });
 
-        it('judges "today" in the tenant zone, not the browser zone', () => {
-            // 25 Nov 00:30 in Auckland is still 24 Nov in UTC: a range ending 24 Nov NZ has ended.
-            storeRange('2026-11-21T00:00:00', '2026-11-24T23:59:59');
+        it('keeps a range on its last day when the tenant is already on tomorrow', () => {
+            // Kiritimati (UTC+14) is ahead of every browser zone the tests run in.
+            saveDateFilterTo(KEY, {startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-26'), useTime: false});
 
-            const loaded = loadDateFilterFrom(KEY, {timeZone: NZ, now: nzNow('2026-11-25T00:30:00')});
+            const loaded = loadDateFilterFrom(KEY, {timeZone: 'Pacific/Kiritimati', now: dayjs('2026-11-26T23:30:00')});
 
-            expect(loaded.expiredRange).toBeDefined();
+            expect(loaded.expiredRange).toBeUndefined();
         });
 
-        it('keeps a range on its last day when the browser is ahead of the tenant', () => {
-            // The date picker saves the end as midnight in the browser's zone (dayjs('YYYY-MM-DD')),
-            // so a NZ browser on a US tenant must compare calendar days, not instants.
-            const HONOLULU = 'Pacific/Honolulu';
+        describe('when the page says which date option is saved', () => {
+            const PAGE = 'expiryPage';
+            const optionKey = `dateRangeOption-${PAGE}-${getContactId()}`;
+            const storeEnded = () => saveDateFilterTo(KEY, {
+                startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23'), useTime: false,
+            });
+            const load = () => loadDateFilterFrom(KEY, {appPage: PAGE, now: dayjs('2026-11-25T09:00:00')});
+
+            it('expires an ended range saved as Custom dates', () => {
+                localStorage.setItem(optionKey, 'custom_date');
+                storeEnded();
+                expect(load().expiredRange).toBeDefined();
+            });
+
+            it('honours the per-browser option saved before options were per user', () => {
+                localStorage.setItem(`dateRangeOption-${PAGE}`, 'custom_date');
+                storeEnded();
+                expect(load().expiredRange).toBeDefined();
+            });
+
+            it('leaves a preset alone: Today re-derives its own range', () => {
+                localStorage.setItem(optionKey, 'today');
+                storeEnded();
+
+                const loaded = load();
+
+                expect(loaded.expiredRange).toBeUndefined();
+                expect(loaded.startDate.format('YYYY-MM-DD')).toBe('2026-11-21');
+            });
+        });
+
+        it('keeps a range on its last day when the tenant is behind the browser', () => {
+            // The picker saves days as browser-local midnights, so its last day is judged on the browser's calendar.
             saveDateFilterTo(KEY, {startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23'), useTime: false});
 
-            const loaded = loadDateFilterFrom(KEY, {timeZone: HONOLULU, now: dayjs.tz('2026-11-23T09:00:00', HONOLULU)});
+            const loaded = loadDateFilterFrom(KEY, {timeZone: 'Pacific/Honolulu', now: dayjs('2026-11-23T23:30:00')});
 
             expect(loaded.expiredRange).toBeUndefined();
         });
@@ -166,6 +195,12 @@ describe('saveDateFilterTo / loadDateFilterFrom', () => {
 
             expect(loadDateFilterFrom(KEY, {timeZone: NZ}).expiredRange).toBeUndefined();
         });
+    });
+
+    it('treats only an epoch start as all time', () => {
+        expect(isAllTimeStart({startDate: dayjs(0)})).toBe(true);
+        expect(isAllTimeStart({startDate: dayjs('2026-11-21')})).toBe(false);
+        expect(isAllTimeStart(null)).toBe(false);
     });
 
     it('does not throw when localStorage rejects the write', () => {

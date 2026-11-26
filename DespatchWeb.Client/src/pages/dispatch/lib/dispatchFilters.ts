@@ -24,6 +24,8 @@ export interface DispatchFilters {
 }
 
 export const SELECTED_VIEWS_KEY = () => `selectedViews-${LegacyAppPage.Dispatch}-${getContactId()}`;
+/** The date menu's `appPage` on Dispatch, which keys its saved option. */
+export const DATE_MENU_PAGE = 'home';
 export const DATE_FILTER_KEY = () => `dateFilter-${LegacyAppPage.Dispatch}-${getContactId()}`;
 export const REFRESH_INTERVAL_KEY = () => `refreshInterval-${LegacyAppPage.Dispatch}-${getContactId()}`;
 export const DRIVER_LOCATION_REFRESH_KEY = () => `driverLocationRefreshInterval-${LegacyAppPage.Dispatch}-${getContactId()}`;
@@ -119,7 +121,7 @@ export function persistSelectedViews(views: DfrntPageViewModel[]): void {
  * range that ended before today (tenant zone) comes back as all time.
  */
 export function loadDateFilter(timeZone: string = getIanaTimezone()): LoadedDateFilter {
-    return loadDateFilterFrom(DATE_FILTER_KEY(), {timeZone});
+    return loadDateFilterFrom(DATE_FILTER_KEY(), {timeZone, appPage: DATE_MENU_PAGE});
 }
 
 /** Build the initial filters from persisted view selection + date range. */

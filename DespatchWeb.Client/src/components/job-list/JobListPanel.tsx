@@ -1,7 +1,7 @@
 
 import {pluralise} from '../../utils/pluralise';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Progress} from '@mantine/core';
+import {Box, Progress, VisuallyHidden} from '@mantine/core';
 import {useDebouncedValue, useDisclosure, useHotkeys, useLocalStorage, useUncontrolled} from '@mantine/hooks';
 import dayjs from 'dayjs';
 import type {
@@ -841,10 +841,14 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             : undefined,
         [visibleJobs.length, hookData.isFetching, searchNotice, onWidenDates],
     );
-    // Only when the dates themselves returned nothing; a tab or search hiding the rows explains itself.
-    const datesEmptyState = stats.total === 0 && !debouncedSearchQuery && !hookData.isFetching
+    // Only when the dates themselves returned nothing; a tab or search hiding the rows explains itself,
+    // and a failed fetch says nothing about the dates. A background poll keeps the message steady.
+    const datesEmptyState = stats.total === 0 && !debouncedSearchQuery && !hookData.isLoading && !hookData.isError
         ? dateEmptyState
         : undefined;
+    const emptyState = noticeEmptyState ?? datesEmptyState ?? filterEmptyState;
+    // Mounted for the list's lifetime: a live region announces changes to its text, not its own arrival.
+    const emptyAnnouncement = visibleJobs.length === 0 && emptyState ? `${emptyState.title}. ${emptyState.message}` : '';
     const matchLabel = visibleJobs.length > 0 ? matchModeLabel(searchNotice) : null;
     const handleSearchAnywhere = useCallback(
         () => hookDataRef.current.updateParams({job: searchNotice?.jobTerm ?? undefined, forceContains: true, page: 0}),
@@ -927,6 +931,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 />
             )}
             {matchLabel && <JobSearchMatchBar label={matchLabel} onSearchAnywhere={handleSearchAnywhere}/>}
+            <VisuallyHidden role="status">{emptyAnnouncement}</VisuallyHidden>
             <JobListTable
                 jobs={visibleJobs}
                 selectedJobId={selectedJobId}
@@ -949,7 +954,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onLoadMore={hookData.fetchNextPage}
                 hasMore={hookData.hasMore}
                 isFetchingMore={hookData.isFetchingNextPage}
-                emptyState={noticeEmptyState ?? datesEmptyState ?? filterEmptyState}
+                emptyState={emptyState}
             />
             <JobListFooter
                 displayedCount={visibleJobs.length}

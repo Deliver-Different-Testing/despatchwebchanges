@@ -1881,6 +1881,42 @@ describe('JobListPanel job search notices', () => {
             expect(onAction).toHaveBeenCalledTimes(1);
         });
 
+        it('keeps saying so while a background poll runs', async () => {
+            const fetchConfig = {
+                ...noticeFetchConfig({}),
+                refetchInterval: 50,
+                fetchFn: vi.fn()
+                    .mockResolvedValueOnce({jobs: [], totalCount: 0, hasMore: false})
+                    .mockReturnValue(new Promise(() => {})),
+            };
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig, dateEmptyState: dateEmptyState(),
+            })}/>);
+            expect(await screen.findByText('No jobs in these dates')).toBeInTheDocument();
+
+            await waitFor(() => expect(fetchConfig.fetchFn).toHaveBeenCalledTimes(2));
+
+            expect(screen.getByText('No jobs in these dates')).toBeInTheDocument();
+        });
+
+        it('does not blame the dates when the fetch failed', async () => {
+            const fetchConfig = {...noticeFetchConfig({}), fetchFn: vi.fn().mockRejectedValue(new Error('down'))};
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig, dateEmptyState: dateEmptyState(),
+            })}/>);
+
+            await waitFor(() => expect(fetchConfig.fetchFn).toHaveBeenCalled());
+            await waitFor(() => expect(screen.getByText('No jobs found')).toBeInTheDocument());
+            expect(screen.queryByText('No jobs in these dates')).not.toBeInTheDocument();
+        });
+
+        it('keeps one status region mounted so the empty result is announced when it arrives', async () => {
+            // A live region announces changes to its text, not its own arrival.
+            await renderWithJobs([createMockDispatchJob({id: 1, jobNo: 'ROW-1'})], {dateEmptyState: dateEmptyState()});
+
+            expect(screen.getByRole('status')).toBeEmptyDOMElement();
+        });
+
         it('announces the empty result as a status', async () => {
             renderWithMantineProviders(<JobListPanel {...createDefaultProps({
                 appPage: AppPage.Dispatch, fetchConfig: noticeFetchConfig({}), dateEmptyState: dateEmptyState(),

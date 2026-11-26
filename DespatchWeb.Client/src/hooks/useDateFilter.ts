@@ -8,9 +8,7 @@ type ExpiredRange = NonNullable<LoadedDateFilter['expiredRange']>;
  * page-specific "all time" recomputation); `setValue` writes it back under `storageKey`.
  *
  * When `load` reports a stored range that has ended, the replacement is persisted on
- * mount and `onExpired` is told once, so the page can say why the dates changed. A preset
- * such as Today re-derives its range on mount (the date menu's effect runs before this
- * one); that new range stands and nothing has expired.
+ * mount and `onExpired` is told once, so the page can say why the dates changed.
  */
 export function useDateFilter(
     storageKey: string,
@@ -24,9 +22,7 @@ export function useDateFilter(
         useTime: initial.useTime,
     }));
 
-    const setBeforeMountRef = useRef(false);
     const setValue = useCallback((next: StoredDateFilter) => {
-        setBeforeMountRef.current = true;
         setState(next);
         saveDateFilterTo(storageKey, next);
     }, [storageKey]);
@@ -35,7 +31,6 @@ export function useDateFilter(
     useEffect(() => {
         if (expiryHandledRef.current || !initial.expiredRange) return;
         expiryHandledRef.current = true;
-        if (setBeforeMountRef.current) return;
         saveDateFilterTo(storageKey, value);
         onExpired?.(initial.expiredRange);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps

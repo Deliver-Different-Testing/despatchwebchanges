@@ -798,10 +798,10 @@ describe('NationwidePage empty lists held to a date range', () => {
         renderPage({onLayoutBridgeReady, onShowAllDates});
         const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
-        act(() => { bridge.updateFilters({startDate: dayjs.tz('2026-11-21T00:00:00', NZ), endDate: dayjs.tz('2026-11-23T23:59:59', NZ), useTime: false}); });
+        act(() => { bridge.updateFilters({startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23'), useTime: false}); });
 
         for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
-            expect(listProps[prefix].dateEmptyState?.message).toBe('The date filter is set to 21/Nov to 23/Nov.');
+            expect(listProps[prefix].dateEmptyState?.message).toMatch(/^The date filter is set to 21\/Nov to 23\/Nov\./);
         }
         listProps.nwNewJobList.dateEmptyState!.onAction!();
         expect(onShowAllDates).toHaveBeenCalledTimes(1);

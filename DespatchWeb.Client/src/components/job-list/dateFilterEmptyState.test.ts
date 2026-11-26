@@ -1,22 +1,13 @@
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
 import {dateFilterEmptyState} from './dateFilterEmptyState';
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
-const NZ = 'Pacific/Auckland';
-const format = {timeZone: NZ, isUs: false};
+const range = {startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23')};
+const format = {isUs: false, now: dayjs('2026-11-26')};
 
 describe('dateFilterEmptyState', () => {
     it('names the dates and offers to show all dates', () => {
         const onShowAllDates = vi.fn();
-        const state = dateFilterEmptyState(
-            {startDate: dayjs.tz('2026-11-21T00:00:00', NZ), endDate: dayjs.tz('2026-11-23T23:59:59', NZ)},
-            onShowAllDates,
-            format,
-        );
+        const state = dateFilterEmptyState(range, onShowAllDates, format);
 
         expect(state).toMatchObject({
             title: 'No jobs in these dates',
@@ -27,15 +18,16 @@ describe('dateFilterEmptyState', () => {
         expect(onShowAllDates).toHaveBeenCalledTimes(1);
     });
 
+    it('says the selected views may also be the cause', () => {
+        expect(dateFilterEmptyState(range, vi.fn(), {...format, viewsSelected: true})?.message)
+            .toBe('The date filter is set to 21/Nov to 23/Nov. Your selected views may also be hiding jobs.');
+    });
+
     it('says nothing for all time, where an empty list is genuinely empty', () => {
         expect(dateFilterEmptyState({startDate: dayjs(0), endDate: dayjs()}, vi.fn(), format)).toBeUndefined();
     });
 
     it('says nothing when the page cannot reset the dates', () => {
-        expect(dateFilterEmptyState(
-            {startDate: dayjs.tz('2026-11-21T00:00:00', NZ), endDate: dayjs.tz('2026-11-23T23:59:59', NZ)},
-            undefined,
-            format,
-        )).toBeUndefined();
+        expect(dateFilterEmptyState(range, undefined, format)).toBeUndefined();
     });
 });

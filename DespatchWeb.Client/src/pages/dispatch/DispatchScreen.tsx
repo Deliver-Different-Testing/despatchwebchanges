@@ -10,6 +10,7 @@ import {DispatchPage, type DispatchLayoutBridge} from './DispatchPage';
 import {createDefaultDispatchLayout, createDispatchBoxes} from './lib/boxDefinitions';
 import {
     DATE_FILTER_KEY,
+    DATE_MENU_PAGE,
     DRIVER_LOCATION_REFRESH_KEY,
     REFRESH_INTERVAL_KEY,
     TASK_REFRESH_KEY,
@@ -58,7 +59,7 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
     const [dateFilter, setDateFilter] = useDateFilter(
         DATE_FILTER_KEY(),
         () => loadDateFilter(ianaTimeZone),
-        (range) => showPageToast(expiredRangeMessage(range, {timeZone: ianaTimeZone, isUs: isUsCustomer}), 'info'),
+        (range) => showPageToast(expiredRangeMessage(range, {isUs: isUsCustomer}), 'info'),
     );
     const dateFilterRef = useRef(dateFilter);
     dateFilterRef.current = dateFilter;
@@ -157,7 +158,7 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
             columnEditMode,
             onToggleColumnEditMode: toggleColumnEditMode,
         }),
-        dateFilter: {data: dateFilter, appPage: 'home', timeZone, onRefreshData: refreshDateFilter},
+        dateFilter: {data: dateFilter, appPage: DATE_MENU_PAGE, timeZone, onRefreshData: refreshDateFilter},
         actionsMenu: {
             onCreateNewJob: () => void createNewJob(),
             onInterCourierCharge: () => bridgeRef.current?.openInterCourierCharge(),

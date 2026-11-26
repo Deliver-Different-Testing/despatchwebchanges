@@ -31,6 +31,7 @@ import {getContactId} from '../../../api/session';
 import {Icon} from '../icon/Icon';
 import {badgeOverflowStyle, toolbarIconButtonClassName, toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
 import {formatDateRange} from '../../../utils/dateRangeSummary';
+import {isAllTimeStart} from '../../../utils/dateFilterStorage';
 
 /** The string form `DateInput` speaks. */
 const ISO_DATE = 'YYYY-MM-DD';
@@ -81,9 +82,6 @@ function setDateFilterDefaults(ianaTimeZone: string): DateFilterData {
         endDate: dayjs().tz(ianaTimeZone).add(24, 'hours'),
     };
 }
-
-/** An epoch start is "all time": an applied range with one is no date or day restriction. */
-const isAllTimeStart = (data: DateFilterData | null) => data?.startDate.valueOf() === 0;
 
 /** An epoch start is "all time", which is no custom range, so offer the last week instead. */
 function customDateDraft(committed: DateFilterData | null, ianaTimeZone: string): DateFilterData {
@@ -408,7 +406,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                 return `Next ${formatDuration(selectedMinsOption)}`;
             case 'custom_date':
                 return dateFilterData && !isAllTimeStart(dateFilterData)
-                    ? formatDateRange(dateFilterData.startDate, dateFilterData.endDate, {timeZone: ianaTimeZone})
+                    ? formatDateRange(dateFilterData.startDate, dateFilterData.endDate, {})
                     : null;
             default:
                 return null;

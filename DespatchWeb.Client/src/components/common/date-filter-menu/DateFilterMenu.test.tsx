@@ -558,12 +558,8 @@ describe('DateFilterMenu', () => {
     });
 
     describe('Active filter on the toolbar', () => {
-        // Ralph (OTG) had a custom range applied behind a plain calendar icon and no way to tell.
-        const NZ = 'Pacific/Auckland';
-        const custom: DateFilterData = {
-            startDate: dayjs.tz('2026-11-21T00:00:00', NZ),
-            endDate: dayjs.tz('2026-11-23T23:59:59', NZ),
-        };
+        // Picked days are saved as browser-local midnights.
+        const custom: DateFilterData = {startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23')};
         const allTime: DateFilterData = {startDate: dayjs(0), endDate: dayjs().add(24, 'hours')};
         const clearButton = () => screen.queryByRole('button', {name: 'Clear date filter'});
 
@@ -628,7 +624,7 @@ describe('DateFilterMenu', () => {
         const rangeKey = 'dateFilter-ended-test';
         const yesterday = dayjs().subtract(1, 'day');
         const Page = ({onExpired}: {onExpired: () => void}) => {
-            const [filter, setFilter] = useDateFilter(rangeKey, () => loadDateFilterFrom(rangeKey), onExpired);
+            const [filter, setFilter] = useDateFilter(rangeKey, () => loadDateFilterFrom(rangeKey, {appPage: 'ended'}), onExpired);
             return (
                 <DateFilterMenu
                     dateFilterData={filter}

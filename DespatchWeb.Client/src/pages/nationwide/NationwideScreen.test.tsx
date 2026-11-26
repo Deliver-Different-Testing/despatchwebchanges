@@ -156,6 +156,7 @@ describe('NationwideScreen', () => {
 
     it('drops a saved custom range that has ended, says so once and pushes all time', async () => {
         const {toastService} = await import('../../services/toastService');
+        localStorage.setItem('dateRangeOption-nationwide-42', 'custom_date');
         localStorage.setItem('dateFilter-2-42', JSON.stringify({
             startDate: '2020-11-21T00:00:00.000Z', endDate: '2020-11-23T00:00:00.000Z', useTime: false,
         }));

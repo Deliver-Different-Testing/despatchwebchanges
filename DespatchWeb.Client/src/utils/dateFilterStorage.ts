@@ -10,6 +10,7 @@ import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import setDateFilterDefaults from './setDateFilterDefaults';
+import {getContactId} from '../api/session';
 
 // Self-contained: this module calls `.tz()`, so it must not rely on another
 // module having extended dayjs first.
@@ -34,8 +35,28 @@ export interface LoadDateFilterOptions {
      * timezone; Dispatch does not.
      */
     timeZone?: string;
+    /**
+     * The date menu's page (its `appPage`). When given, only a range saved under the
+     * Custom dates option can expire; a preset such as Today re-derives its own range.
+     */
+    appPage?: string;
     /** Clock override for tests. */
     now?: Dayjs;
+}
+
+/** An epoch start is "all time": no restriction on which days a list covers. */
+export function isAllTimeStart(filter: {startDate: Dayjs} | null | undefined): boolean {
+    return filter?.startDate.valueOf() === 0;
+}
+
+/** The date menu's saved option for `appPage`: per user, falling back to the older per-browser key. */
+function savedRangeOption(appPage: string): string | null {
+    try {
+        return localStorage.getItem(`dateRangeOption-${appPage}-${getContactId()}`)
+            ?? localStorage.getItem(`dateRangeOption-${appPage}`);
+    } catch {
+        return null;
+    }
 }
 
 function defaults(timeZone?: string): StoredDateFilter {
@@ -50,10 +71,9 @@ function defaults(timeZone?: string): StoredDateFilter {
  * An epoch start means "all time", in which case the stored end is stale by
  * definition and is recomputed to now+24h so future jobs stay in range.
  *
- * A custom range that ended before today (in `timeZone`) is not restored: it
- * would silently empty the grid on every load. The picker saves its end as
- * midnight in the browser's zone, so the end is read as a browser-local
- * calendar day and compared with the tenant's today. Defaults come back with
+ * A custom range that ended before today is not restored: it would silently
+ * empty the grid on every load. The picker saves days as browser-local
+ * midnights, so both the end and today are browser-local calendar days. Defaults come back with
  * `expiredRange` set. Storage is left alone so this stays pure; the page
  * persists the reset.
  */
@@ -71,11 +91,10 @@ export function loadDateFilterFrom(
         if (!startDate.isValid() || !endDate.isValid()) return defaults();
 
         const now = options.now ?? dayjs();
-        if (startDate.valueOf() === 0) {
+        if (isAllTimeStart({startDate})) {
             endDate = (options.timeZone ? now.tz(options.timeZone) : now).add(24, 'hours');
-        } else {
-            const today = (options.timeZone ? now.tz(options.timeZone) : now).format('YYYY-MM-DD');
-            if (endDate.format('YYYY-MM-DD') < today) {
+        } else if (!options.appPage || savedRangeOption(options.appPage) === 'custom_date') {
+            if (endDate.local().format('YYYY-MM-DD') < now.local().format('YYYY-MM-DD')) {
                 return {...defaults(options.timeZone), expiredRange: {startDate, endDate}};
             }
         }

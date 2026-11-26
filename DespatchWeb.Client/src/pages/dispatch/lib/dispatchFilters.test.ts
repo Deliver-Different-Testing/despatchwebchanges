@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import {
     SELECTED_VIEWS_KEY,
     DATE_FILTER_KEY,
+    DATE_MENU_PAGE,
     REFRESH_INTERVAL_KEY,
     DRIVER_LOCATION_REFRESH_KEY,
     TASK_REFRESH_KEY,
@@ -13,6 +14,7 @@ import {
     persistSelectedViews,
     resolveInitialViewSelection,
 } from './dispatchFilters';
+import {getContactId} from '../../../api/session';
 import {resolveInitialViewSelection as resolveInitialViewSelectionFromStorage} from '../../../utils/viewsFilterStorage';
 import type {DfrntPageViewModel} from '../../../types/interfaces/dfrnt-page-view-model.interface';
 
@@ -106,6 +108,7 @@ describe('dispatchFilters', () => {
         });
 
         it('loads all time in place of a stored range that has ended', () => {
+            localStorage.setItem(`dateRangeOption-${DATE_MENU_PAGE}-${getContactId()}`, 'custom_date');
             localStorage.setItem(DATE_FILTER_KEY(), JSON.stringify({
                 startDate: '2025-02-01T00:00:00.000Z',
                 endDate: '2025-02-28T00:00:00.000Z',

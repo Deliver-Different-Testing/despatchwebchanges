@@ -783,9 +783,9 @@ describe('DispatchPage empty list held to a date range', () => {
         renderPage({onLayoutBridgeReady, onShowAllDates});
         const bridge = onLayoutBridgeReady.mock.calls[0][0];
 
-        act(() => { bridge.updateFilters({startDate: dayjs.tz('2026-11-21T00:00:00', NZ), endDate: dayjs.tz('2026-11-23T23:59:59', NZ)}); });
+        act(() => { bridge.updateFilters({startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23')}); });
 
-        await waitFor(() => expect(jobListFetchConfig.dateEmptyState?.message).toBe('The date filter is set to 21/Nov to 23/Nov.'));
+        await waitFor(() => expect(jobListFetchConfig.dateEmptyState?.message).toMatch(/^The date filter is set to 21\/Nov to 23\/Nov\./));
         jobListFetchConfig.dateEmptyState!.onAction!();
         expect(onShowAllDates).toHaveBeenCalledTimes(1);
     });

@@ -604,8 +604,8 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     }] : []), [currentJob]);
 
     const dateEmptyState = useMemo(
-        () => dateFilterEmptyState(dateFilter, onShowAllDates, {timeZone: ianaTimeZone, isUs: isUsCustomer}),
-        [dateFilter, onShowAllDates, ianaTimeZone, isUsCustomer],
+        () => dateFilterEmptyState(dateFilter, onShowAllDates, {isUs: isUsCustomer, viewsSelected: selectedViewIds.length > 0}),
+        [dateFilter, onShowAllDates, isUsCustomer, selectedViewIds],
     );
 
     const renderBoxContent = useCallback((boxName: string, headerSlot?: HTMLElement | null) => {

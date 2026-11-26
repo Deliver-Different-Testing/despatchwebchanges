@@ -15,7 +15,8 @@ import {NationwidePage} from './NationwidePage';
 import type {NationwideLayoutBridge} from './NationwidePageProps';
 import {createDefaultNationwideLayout, createNationwideBoxes} from './lib/boxDefinitions';
 import {buildRefreshIntervalOptions, resolveSavedInterval} from './lib/refreshInterval';
-import {loadDateFilterFrom, type StoredDateFilter} from '../../utils/dateFilterStorage';
+import type {StoredDateFilter} from '../../utils/dateFilterStorage';
+import {DATE_MENU_PAGE, loadNationwideDateFilter} from './lib/dateFilter';
 import {getSession} from '../../api/session';
 import {showPageToast} from '../pageToasts';
 import {getIanaTimezone} from '../../utils/dateUtils';
@@ -63,8 +64,8 @@ export const NationwideScreen: React.FC<NationwideScreenProps> = ({deepLinkJobId
     const ianaTimeZone = getIanaTimezone(timeZone);
     const [dateFilter, setDateFilter] = useDateFilter(
         dateFilterKey,
-        () => loadDateFilterFrom(dateFilterKey, {timeZone: ianaTimeZone}),
-        (range) => showPageToast(expiredRangeMessage(range, {timeZone: ianaTimeZone, isUs: isUsCustomer}), 'info'),
+        () => loadNationwideDateFilter(ianaTimeZone),
+        (range) => showPageToast(expiredRangeMessage(range, {isUs: isUsCustomer}), 'info'),
     );
     const refreshDateFilter = useCallback((data: DateFilterData) => {
         const next: StoredDateFilter = {...data, useTime: data.useTime ?? false};
@@ -120,7 +121,7 @@ export const NationwideScreen: React.FC<NationwideScreenProps> = ({deepLinkJobId
         settings: {onClick: () => void openSettings()},
         dateFilter: {
             data: dateFilter,
-            appPage: 'nationwide',
+            appPage: DATE_MENU_PAGE,
             onRefreshData: refreshDateFilter,
         },
     };
