@@ -651,7 +651,9 @@ describe('DateFilterMenu', () => {
 
             expect(onExpired).not.toHaveBeenCalled();
             expect(screen.getByText('Today')).toBeInTheDocument();
-            expect(dayjs(JSON.parse(localStorage.getItem(rangeKey)!).startDate).isSame(dayjs(), 'day')).toBe(true);
+            // The menu's tenant zone defaults to NZ, so "today" is NZ's today whatever the browser's zone.
+            const savedStart = dayjs(JSON.parse(localStorage.getItem(rangeKey)!).startDate).tz('Pacific/Auckland');
+            expect(savedStart.isSame(dayjs().tz('Pacific/Auckland'), 'day')).toBe(true);
         });
 
         it('drops an ended custom range to all time and says so', () => {

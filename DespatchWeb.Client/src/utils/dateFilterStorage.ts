@@ -51,7 +51,9 @@ function defaults(timeZone?: string): StoredDateFilter {
  * definition and is recomputed to now+24h so future jobs stay in range.
  *
  * A custom range that ended before today (in `timeZone`) is not restored: it
- * would silently empty the grid on every load. Defaults come back with
+ * would silently empty the grid on every load. The picker saves its end as
+ * midnight in the browser's zone, so the end is read as a browser-local
+ * calendar day and compared with the tenant's today. Defaults come back with
  * `expiredRange` set. Storage is left alone so this stays pure; the page
  * persists the reset.
  */
@@ -72,8 +74,8 @@ export function loadDateFilterFrom(
         if (startDate.valueOf() === 0) {
             endDate = (options.timeZone ? now.tz(options.timeZone) : now).add(24, 'hours');
         } else {
-            const startOfToday = (options.timeZone ? now.tz(options.timeZone) : now).startOf('day');
-            if (endDate.isBefore(startOfToday)) {
+            const today = (options.timeZone ? now.tz(options.timeZone) : now).format('YYYY-MM-DD');
+            if (endDate.format('YYYY-MM-DD') < today) {
                 return {...defaults(options.timeZone), expiredRange: {startDate, endDate}};
             }
         }

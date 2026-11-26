@@ -841,7 +841,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             : undefined,
         [visibleJobs.length, hookData.isFetching, searchNotice, onWidenDates],
     );
-    const datesEmptyState = visibleJobs.length === 0 && !hookData.isFetching ? dateEmptyState : undefined;
+    // Only when the dates themselves returned nothing; a tab or search hiding the rows explains itself.
+    const datesEmptyState = stats.total === 0 && !debouncedSearchQuery && !hookData.isFetching
+        ? dateEmptyState
+        : undefined;
     const matchLabel = visibleJobs.length > 0 ? matchModeLabel(searchNotice) : null;
     const handleSearchAnywhere = useCallback(
         () => hookDataRef.current.updateParams({job: searchNotice?.jobTerm ?? undefined, forceContains: true, page: 0}),

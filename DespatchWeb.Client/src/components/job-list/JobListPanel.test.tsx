@@ -397,6 +397,19 @@ describe('JobListPanel', () => {
             expect(screen.getByRole('radio', {name: 'Done'})).toBeChecked();
         });
 
+        it('blames the tab, not the dates, when the dates returned jobs the tab hides', async () => {
+            await renderWithJobs(assignedJobs(), {
+                dateEmptyState: {title: 'No jobs in these dates', message: 'The date filter is set to 21/Nov.', actionText: 'Show all dates', onAction: vi.fn()},
+            });
+
+            fireEvent.click(screen.getByRole('radio', {name: 'Done'}));
+            await waitForJobsLoaded();
+            await new Promise((resolve) => setTimeout(resolve, 50));
+
+            expect(screen.getByText('No Done jobs')).toBeInTheDocument();
+            expect(screen.queryByText('No jobs in these dates')).not.toBeInTheDocument();
+        });
+
         it('says the tab is hiding the rows and offers Show all, instead of claiming there are none', async () => {
             await renderWithJobs(assignedJobs());
 

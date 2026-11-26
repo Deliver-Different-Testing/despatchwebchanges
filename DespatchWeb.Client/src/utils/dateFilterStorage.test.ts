@@ -146,6 +146,17 @@ describe('saveDateFilterTo / loadDateFilterFrom', () => {
             expect(loaded.expiredRange).toBeDefined();
         });
 
+        it('keeps a range on its last day when the browser is ahead of the tenant', () => {
+            // The date picker saves the end as midnight in the browser's zone (dayjs('YYYY-MM-DD')),
+            // so a NZ browser on a US tenant must compare calendar days, not instants.
+            const HONOLULU = 'Pacific/Honolulu';
+            saveDateFilterTo(KEY, {startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23'), useTime: false});
+
+            const loaded = loadDateFilterFrom(KEY, {timeZone: HONOLULU, now: dayjs.tz('2026-11-23T09:00:00', HONOLULU)});
+
+            expect(loaded.expiredRange).toBeUndefined();
+        });
+
         it('never expires all time', () => {
             localStorage.setItem(KEY, JSON.stringify({
                 startDate: new Date(0).toISOString(),
