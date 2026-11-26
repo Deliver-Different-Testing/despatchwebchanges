@@ -30,6 +30,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     {
         _context = _db.CreateContext();
         _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
+        _inboundAgentLinkServiceMock.MintJobLinkAsync(Arg.Any<DespatchContext>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns("https://inbound.example.com/TOKEN123");
 
         // Default tenant setup
         _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
@@ -520,7 +522,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -574,7 +576,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         _tenantInfoServiceMock.FormatDateForTenant(Arg.Any<DateTime?>()).Returns("FORMATTED_ETA");
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -639,7 +641,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         _tenantInfoServiceMock.FormatDateForTenant(Arg.Any<DateTime?>()).Returns("FORMATTED_ETA");
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(deliveryJobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(deliveryJobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -664,7 +666,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _context.TucAgents.Add(agent);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         await CreateRepository().SendAgentRequestMessageAsync(agentId, jobId);
@@ -691,7 +693,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -721,7 +723,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         _tenantInfoServiceMock.IsUsTenant().Returns(true);
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -747,7 +749,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -776,7 +778,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -810,7 +812,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -843,7 +845,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -897,7 +899,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns((string?)null); // no InboundUrl configured — nothing to link, so no email
 
         var repository = CreateRepository();
@@ -925,7 +927,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns<Task<string?>>(_ => throw new InvalidOperationException("boom"));
 
         var repository = CreateRepository();
@@ -953,7 +955,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN123");
 
         var repository = CreateRepository();
@@ -1004,7 +1006,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         _inboundAgentLinkServiceMock
-            .BuildJobLinkAsync(jobId, Arg.Any<CancellationToken>())
+            .BuildPreviewLinkAsync(jobId, Arg.Any<CancellationToken>())
             .Returns((string?)null);
 
         var repository = CreateRepository();
@@ -3196,7 +3198,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _context.TucAgents.Add(agent);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        _inboundAgentLinkServiceMock.BuildJobLinkAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+        _inboundAgentLinkServiceMock.BuildPreviewLinkAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns("https://inbound.example.com/TOKEN");
 
         var repository = CreateRepository();
