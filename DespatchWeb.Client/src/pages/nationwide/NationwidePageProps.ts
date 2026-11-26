@@ -41,4 +41,6 @@ export interface NationwidePageProps {
      */
     deepLinkJobId?: number;
     onLayoutBridgeReady?: (bridge: NationwideLayoutBridge) => void;
+    /** Reset the host's date filter to all time (an empty list's "Show all dates"). */
+    onShowAllDates?: () => void;
 }

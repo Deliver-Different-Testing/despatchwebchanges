@@ -509,7 +509,7 @@ describe('DateFilterMenu', () => {
             const stored = localStorage.getItem(rangeKey);
 
             const Page = () => {
-                const [filter, setFilter] = useDateFilter(rangeKey, () => loadDateFilterFrom(rangeKey));
+                const [filter, setFilter] = useDateFilter(rangeKey, () => loadDateFilterFrom(rangeKey, {now: dayjs('2026-10-05')}));
                 return (
                     <DateFilterMenu
                         dateFilterData={filter}
@@ -554,6 +554,114 @@ describe('DateFilterMenu', () => {
             );
 
             expect(onRefreshData).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('Active filter on the toolbar', () => {
+        // Picked days are saved as browser-local midnights.
+        const custom: DateFilterData = {startDate: dayjs('2026-11-21'), endDate: dayjs('2026-11-23')};
+        const allTime: DateFilterData = {startDate: dayjs(0), endDate: dayjs().add(24, 'hours')};
+        const clearButton = () => screen.queryByRole('button', {name: 'Clear date filter'});
+
+        it('shows nothing extra for all time', () => {
+            localStorage.setItem(optionKey('active'), 'all_time');
+            renderWithProviders(<DateFilterMenu dateFilterData={allTime} onRefreshData={vi.fn()} appPage="active"/>);
+
+            expect(clearButton()).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Date filter'})).not.toHaveAccessibleDescription();
+        });
+
+        it('shows the applied custom range beside the trigger and describes the trigger with it', () => {
+            localStorage.setItem(optionKey('active'), 'custom_date');
+            renderWithProviders(<DateFilterMenu dateFilterData={custom} onRefreshData={vi.fn()} appPage="active"/>);
+
+            expect(screen.getByText('21/Nov to 23/Nov')).toBeInTheDocument();
+            expect(clearButton()).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Date filter'}))
+                .toHaveAccessibleDescription('Date filter set to 21/Nov to 23/Nov');
+        });
+
+        it('names the Today and Time range presets', () => {
+            localStorage.setItem(optionKey('today'), 'today');
+            localStorage.setItem(optionKey('mins'), 'custom_minutes');
+            renderWithProviders(<>
+                <DateFilterMenu dateFilterData={null} onRefreshData={vi.fn()} appPage="today"/>
+                <DateFilterMenu dateFilterData={null} onRefreshData={vi.fn()} appPage="mins"/>
+            </>);
+
+            expect(screen.getByText('Today')).toBeInTheDocument();
+            expect(screen.getByText('Next 3 hours')).toBeInTheDocument();
+        });
+
+        it('clears back to all time from the chip', () => {
+            localStorage.setItem(optionKey('active'), 'custom_date');
+            const onRefreshData = vi.fn();
+            renderWithProviders(<DateFilterMenu dateFilterData={custom} onRefreshData={onRefreshData} appPage="active"/>);
+
+            fireEvent.click(clearButton()!);
+
+            expect(onRefreshData).toHaveBeenLastCalledWith(expect.objectContaining({startDate: expect.anything()}));
+            expect(onRefreshData.mock.calls.at(-1)![0].startDate.valueOf()).toBe(0);
+            expect(localStorage.getItem(optionKey('active'))).toBe('all_time');
+            expect(clearButton()).not.toBeInTheDocument();
+        });
+
+        it('follows an all-time reset made outside the menu', () => {
+            // The grid's "Show all dates" resets the page's range, not this menu.
+            localStorage.setItem(optionKey('active'), 'custom_date');
+            const {rerender} = renderWithProviders(
+                <DateFilterMenu dateFilterData={custom} onRefreshData={vi.fn()} appPage="active"/>,
+            );
+            expect(clearButton()).toBeInTheDocument();
+
+            rerender(<DateFilterMenu dateFilterData={allTime} onRefreshData={vi.fn()} appPage="active"/>);
+
+            expect(clearButton()).not.toBeInTheDocument();
+            expect(localStorage.getItem(optionKey('active'))).toBe('all_time');
+        });
+    });
+    describe('with a saved range that has ended', () => {
+        const rangeKey = 'dateFilter-ended-test';
+        const yesterday = dayjs().subtract(1, 'day');
+        const Page = ({onExpired}: {onExpired: () => void}) => {
+            const [filter, setFilter] = useDateFilter(rangeKey, () => loadDateFilterFrom(rangeKey, {appPage: 'ended'}), onExpired);
+            return (
+                <DateFilterMenu
+                    dateFilterData={filter}
+                    appPage="ended"
+                    onRefreshData={(next) => setFilter({...next, useTime: next.useTime ?? false})}
+                />
+            );
+        };
+        const storeYesterday = () => localStorage.setItem(rangeKey, JSON.stringify({
+            startDate: yesterday.startOf('day'), endDate: yesterday.endOf('day'), useTime: false,
+        }));
+
+        it('keeps the Today preset as today, with no "ended" notice', () => {
+            // Today's stored range is always yesterday's by the next morning; the preset recomputes it.
+            localStorage.setItem(optionKey('ended'), 'today');
+            storeYesterday();
+            const onExpired = vi.fn();
+
+            renderWithProviders(<Page onExpired={onExpired}/>);
+
+            expect(onExpired).not.toHaveBeenCalled();
+            expect(screen.getByText('Today')).toBeInTheDocument();
+            // The menu's tenant zone defaults to NZ, so "today" is NZ's today whatever the browser's zone.
+            const savedStart = dayjs(JSON.parse(localStorage.getItem(rangeKey)!).startDate).tz('Pacific/Auckland');
+            expect(savedStart.isSame(dayjs().tz('Pacific/Auckland'), 'day')).toBe(true);
+        });
+
+        it('drops an ended custom range to all time and says so', () => {
+            localStorage.setItem(optionKey('ended'), 'custom_date');
+            storeYesterday();
+            const onExpired = vi.fn();
+
+            renderWithProviders(<Page onExpired={onExpired}/>);
+
+            expect(onExpired).toHaveBeenCalledTimes(1);
+            expect(screen.queryByRole('button', {name: 'Clear date filter'})).not.toBeInTheDocument();
+            expect(localStorage.getItem(optionKey('ended'))).toBe('all_time');
         });
     });
 });

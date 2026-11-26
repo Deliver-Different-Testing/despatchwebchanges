@@ -141,4 +141,9 @@ describe('NoData', () => {
             expect(onAction).toHaveBeenCalledTimes(1);
         });
     });
+
+    it('is not a live region itself (a list that owns one announces its empty result)', () => {
+        renderWithMantine(<NoData title="Nothing" message="Here"/>);
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
 });

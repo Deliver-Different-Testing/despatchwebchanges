@@ -10,6 +10,7 @@ import {useDisclosure} from '@mantine/hooks';
 import {Briefcase} from 'lucide-react';
 import {Icon} from '../../components/common/icon/Icon';
 import {NoData} from '../../components/common/no-data/NoData';
+import {dateFilterEmptyState} from '../../components/job-list/dateFilterEmptyState';
 import {getContactId} from '../../api/session';
 import {AppPage as LegacyAppPage} from '../../types/enums/app-pages.enum';
 import {AppPage} from '../../types/dispatchJob';
@@ -118,6 +119,8 @@ export interface DispatchPageProps {
     /** Leave "Edit columns" mode; routes back through the toolbar so its menu stays in sync. */
     onExitColumnEditMode?: () => void;
     onLayoutBridgeReady?: (bridge: DispatchLayoutBridge) => void;
+    /** Reset the host's date filter to all time (the empty list's "Show all dates"). */
+    onShowAllDates?: () => void;
 }
 
 export const DispatchPage: React.FC<DispatchPageProps> = ({
@@ -127,6 +130,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
     deepLinkJobId,
     onExitColumnEditMode,
     onLayoutBridgeReady,
+    onShowAllDates,
 }) => {
     void timeZone;
 
@@ -531,6 +535,11 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
         }
     }, [showToast, isUsCustomer, jobCreated]);
 
+    const dateEmptyState = useMemo(
+        () => dateFilterEmptyState(filters, onShowAllDates, {isUs: isUsCustomer, viewsSelected: filters.despatchViewIds.length > 0}),
+        [filters, onShowAllDates, isUsCustomer],
+    );
+
     const renderBoxContent = useCallback((boxName: string, headerSlot?: HTMLElement | null): React.ReactNode => {
         switch (boxName) {
             case DispatchBoxes.JobsList:
@@ -554,6 +563,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
                         onJobsLoaded={handleJobsLoaded}
                         setUpdateSearchParamsCallback={(cb) => { pushListParams.current = cb; }}
                         headerSlot={headerSlot}
+                        dateEmptyState={dateEmptyState}
                         topSlot={
                             <ViewsRail
                                 views={pageViews ?? []}
@@ -694,7 +704,7 @@ export const DispatchPage: React.FC<DispatchPageProps> = ({
             default:
                 return null;
         }
-    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode, pageViews, viewsLoading, toggleView, clearViews, mapCourierWork?.jobs, mapView.center, mapView.zoom, refreshIntervals.jobsMs, refreshIntervals.tasksMs, refreshIntervals.driverLocationsMs, courierDisplayMode, courierFlagLastDelivery]);
+    }, [showToast, isUsCustomer, fetchConfigMain, selectJob, selectJobById, currentJobId, currentJob, clearListId, filters, mapJobs, handleJobsLoaded, handleMarkerClick, toMapItem, truckMode, pageViews, viewsLoading, toggleView, clearViews, mapCourierWork?.jobs, mapView.center, mapView.zoom, refreshIntervals.jobsMs, refreshIntervals.tasksMs, refreshIntervals.driverLocationsMs, courierDisplayMode, courierFlagLastDelivery, dateEmptyState]);
 
     const subtitleFor = useCallback((boxName: string) => {
         if (boxName === DispatchBoxes.JobDetail) {
