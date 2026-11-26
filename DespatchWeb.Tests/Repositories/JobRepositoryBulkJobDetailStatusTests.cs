@@ -14,39 +14,13 @@ namespace DespatchWeb.Tests.Repositories;
 /// "delivered" — made a released bulk row render as complete while the grid still showed its real
 /// status. These tests pin the two meanings apart.
 /// </summary>
-public class JobRepositoryBulkJobDetailStatusTests : IAsyncDisposable
+public class JobRepositoryBulkJobDetailStatusTests : JobRepositoryTestBase
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    public JobRepositoryBulkJobDetailStatusTests()
+    public JobRepositoryBulkJobDetailStatusTests() : base(1)
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _tenantInfoServiceMock.GetStaffId().Returns(1);
         _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(Arg.Any<TimeZone>()).Returns(TestDates.Now);
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     [Fact]
     public async Task GetBulkJobDetailAsync_ReleasedButUndelivered_ReportsReleasedAndNotDone()

@@ -14,23 +14,12 @@ namespace DespatchWeb.Tests.Repositories;
 /// span live and archived matches and every page, and that the bucket predicates survive the trip
 /// through SQL.
 /// </summary>
-public class JobRepositoryPodSearchStatusCountsTests : IAsyncDisposable
+public class JobRepositoryPodSearchStatusCountsTests : JobRepositoryTestBase
 {
     private const int PageSize = 50;
 
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
-
     public JobRepositoryPodSearchStatusCountsTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-
         using var context = _db.CreateContext();
         context.TblEcoSettings.Add(new TblEcoSetting
         {
@@ -39,22 +28,6 @@ public class JobRepositoryPodSearchStatusCountsTests : IAsyncDisposable
         });
         context.SaveChanges();
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     private static PodSearchRequest Request(int page = 0) => new()
     {

@@ -16,7 +16,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// fails these tests until it is either wired into the search or added to
 /// <see cref="NotSearchedColumns"/> with a reason.
 /// </summary>
-public class JobRepositoryWildcardSearchTests : IAsyncDisposable
+public class JobRepositoryWildcardSearchTests : JobRepositoryTestBase
 {
     private const string Token = "ZQFIND";
 
@@ -37,19 +37,8 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
         nameof(TblBulkJob.DeliveryLongitude)
     ];
 
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
-
     public JobRepositoryWildcardSearchTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-
         using var context = _db.CreateContext();
         context.TblEcoSettings.Add(new TblEcoSetting
         {
@@ -58,22 +47,6 @@ public class JobRepositoryWildcardSearchTests : IAsyncDisposable
         });
         context.SaveChanges();
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     private static PodSearchRequest Request(string wild) => new()
     {
