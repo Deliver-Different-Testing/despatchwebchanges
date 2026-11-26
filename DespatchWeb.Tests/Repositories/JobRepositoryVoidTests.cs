@@ -1,4 +1,5 @@
 using DespatchWeb.Models.RequestModels;
+using TestJob = DespatchWeb.Tests.Repositories.VoidTestJob;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -8,79 +9,11 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryVoidTests
 {
-    /// <summary>
-    /// Represents a simplified job structure for testing parent-child relationships.
-    /// </summary>
-    private class TestJob
-    {
-        public int Id { get; init; }
-        public int? ParentId { get; init; }
-    }
+    private static List<int> DetermineJobsToVoid(VoidJobRequest data, List<TestJob> allJobs) =>
+        VoidJobSelectionLogic.DetermineToVoid(data, allJobs);
 
-    /// <summary>
-    /// Mimics the GetJobWithChildrenAsync logic from JobRepository.
-    /// Returns the job ID along with all its children IDs (if any).
-    /// </summary>
-    private static List<int> GetJobWithChildren(int jobId, List<TestJob> allJobs)
-    {
-        var childIds = allJobs
-            .Where(j => j.ParentId == jobId)
-            .Select(j => j.Id)
-            .ToList();
-
-        childIds.Add(jobId);
-        return childIds;
-    }
-
-    /// <summary>
-    /// Mimics the GetAllRelatedJobIdsIncludingParentAsync logic from JobRepository.
-    /// Returns all related job IDs including parent and siblings.
-    /// </summary>
-    private static List<int> GetAllRelatedJobIdsIncludingParent(int jobId, List<TestJob> allJobs)
-    {
-        var job = allJobs.FirstOrDefault(j => j.Id == jobId);
-        if (job == null)
-        {
-            return [];
-        }
-
-        List<int> relatedJobIds;
-        if (job.ParentId.HasValue)
-        {
-            // Get siblings (children of the same parent)
-            relatedJobIds = allJobs
-                .Where(j => j.ParentId == job.ParentId)
-                .Select(j => j.Id)
-                .ToList();
-            relatedJobIds.Add(job.ParentId.Value);
-        }
-        else
-        {
-            // Get children
-            relatedJobIds = allJobs
-                .Where(j => j.ParentId == jobId)
-                .Select(j => j.Id)
-                .ToList();
-            relatedJobIds.Add(jobId);
-        }
-
-        return relatedJobIds;
-    }
-
-    /// <summary>
-    /// Mimics the job selection logic from VoidJobAsync.
-    /// </summary>
-    private static List<int> DetermineJobsToVoid(VoidJobRequest data, List<TestJob> allJobs)
-    {
-        if (data.SelectedJobIds is { Count: > 0 })
-        {
-            return data.SelectedJobIds;
-        }
-
-        return data.VoidSingleJobOnly
-            ? GetJobWithChildren(data.JobId, allJobs)
-            : GetAllRelatedJobIdsIncludingParent(data.JobId, allJobs);
-    }
+    private static List<int> GetJobWithChildren(int jobId, List<TestJob> allJobs) =>
+        VoidJobSelectionLogic.GetWithChildren(jobId, allJobs);
 
     [Fact]
     public void DetermineJobsToVoid_VoidSingleJobOnly_ParentWithChildren_VoidsParentAndAllChildren()

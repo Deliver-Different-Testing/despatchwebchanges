@@ -584,7 +584,8 @@ public sealed partial class DeliveryJourneyService(
                 .TagWith("DeliveryJourney - Live Status Updates")
                 .ToListAsync();
 
-            statusUpdateTemps = await ResolveDispatcherNamesAsync(context, statusUpdateTemps);
+            statusUpdateTemps = await ResolveDispatcherNamesAsync(
+                context, statusUpdateTemps, (r, oldValue, newValue) => r with { OldValue = oldValue, NewValue = newValue });
 
             var currentBreakdownTotal = await context.PricingBreakdowns
                 .Where(p => p.JobId == jobId)
@@ -621,21 +622,23 @@ public sealed partial class DeliveryJourneyService(
             .TagWith("DeliveryJourney - Archived Status Updates")
             .ToListAsync();
 
-        archivedStatusUpdateTemps = await ResolveDispatcherNamesAsync(context, archivedStatusUpdateTemps);
+        archivedStatusUpdateTemps = await ResolveDispatcherNamesAsync(
+            context, archivedStatusUpdateTemps, (r, oldValue, newValue) => r with { OldValue = oldValue, NewValue = newValue });
 
         var currentArchivedBreakdownTotal = await context.PricingBreakdownArchives
             .Where(p => p.JobId == jobId)
             .TagWith("DeliveryJourney - Archived PricingBreakdown Total")
             .SumAsync(p => p.ChargeAmount);
 
-        return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateTemps, jobId, currentArchivedBreakdownTotal);
+        return MapStatusUpdatesToViewModels(archivedStatusUpdateTemps, jobId, currentArchivedBreakdownTotal);
     }
 
     private static bool IsDispatcherRow(string changeType, string fieldName) =>
         changeType == nameof(DeliveryJourneyChangeType.JobUpdate) && fieldName == DispatcherFieldName;
 
-    private static async Task<List<JobDeliveryJourneyDto>> ResolveDispatcherNamesAsync(
-        DespatchContext context, List<JobDeliveryJourneyDto> rows)
+    private static async Task<List<T>> ResolveDispatcherNamesAsync<T>(
+        DespatchContext context, List<T> rows, Func<T, string, string, T> withValues)
+        where T : IJobDeliveryJourneyEntry
     {
         var names = await ResolveStaffNamesAsync(
             context,
@@ -651,37 +654,7 @@ public sealed partial class DeliveryJourneyService(
         [
             .. rows
                 .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
-                    ? r with
-                    {
-                        OldValue = ResolveDispatcherValue(r.OldValue, names),
-                        NewValue = ResolveDispatcherValue(r.NewValue, names)
-                    }
-                    : r)
-        ];
-    }
-
-    private async Task<List<JobDeliveryJourneyArchiveDto>> ResolveDispatcherNamesAsync(
-        DespatchContext context, List<JobDeliveryJourneyArchiveDto> rows)
-    {
-        var names = await ResolveStaffNamesAsync(
-            context,
-            rows.Where(r => IsDispatcherRow(r.ChangeType, r.FieldName))
-                .SelectMany(r => new[] { r.OldValue, r.NewValue }));
-
-        if (names.Count == 0)
-        {
-            return rows;
-        }
-
-        return
-        [
-            .. rows
-                .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
-                    ? r with
-                    {
-                        OldValue = ResolveDispatcherValue(r.OldValue, names),
-                        NewValue = ResolveDispatcherValue(r.NewValue, names)
-                    }
+                    ? withValues(r, ResolveDispatcherValue(r.OldValue, names), ResolveDispatcherValue(r.NewValue, names))
                     : r)
         ];
     }
@@ -715,12 +688,7 @@ public sealed partial class DeliveryJourneyService(
     /// keeps the choice deterministic — the underlying query has no ORDER BY.
     /// Null when no row records an actor.
     /// </summary>
-    private static string ResolvePerformedBy(IEnumerable<JobDeliveryJourneyDto> group) =>
-        ResolveActor(group
-            .OrderBy(s => s.Id)
-            .Select(s => (s.StaffFirstName, s.StaffLastName, s.CourierName, s.CourierSurname)));
-
-    private static string ResolvePerformedBy(IEnumerable<JobDeliveryJourneyArchiveDto> group) =>
+    private static string ResolvePerformedBy(IEnumerable<IJobDeliveryJourneyEntry> group) =>
         ResolveActor(group
             .OrderBy(s => s.Id)
             .Select(s => (s.StaffFirstName, s.StaffLastName, s.CourierName, s.CourierSurname)));
@@ -746,12 +714,12 @@ public sealed partial class DeliveryJourneyService(
             : rawId;
 
     /// <summary>
-    /// Maps live status update DTOs to view models, grouping by timestamp.
+    /// Maps live or archived status update DTOs to view models, grouping by timestamp.
     /// Computes a running grand total for pricing events by rolling back the
     /// current breakdown total via each pricing group's delta in reverse chrono order.
     /// </summary>
     private List<DeliveryJourneyViewModel> MapStatusUpdatesToViewModels(
-        List<JobDeliveryJourneyDto> journeyTemps,
+        IEnumerable<IJobDeliveryJourneyEntry> journeyTemps,
         int jobId,
         decimal currentBreakdownTotal)
     {
@@ -797,69 +765,7 @@ public sealed partial class DeliveryJourneyService(
                         JobId = jobId,
                         Date = localDate,
                         Title = GetTitle(first),
-                        Description = isCreation ? creation.Description : GetDescription([.. group], infoService.GetCulture()),
-                        Icon = GetIcon(first.ChangeType, first.FieldName),
-                        Tags = isCreation ? creation.Tags : [.. BuildTags(group, infoService.GetCulture())],
-                        PerformedBy = ResolvePerformedBy(group),
-                        GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
-                    };
-                })
-        ];
-    }
-
-    /// <summary>
-    /// Maps archived status update DTOs to view models, grouping by timestamp.
-    /// Computes a running grand total for pricing events by rolling back the
-    /// current breakdown total via each pricing group's delta in reverse chrono order.
-    /// </summary>
-    private List<DeliveryJourneyViewModel> MapArchivedStatusUpdatesToViewModels(
-        List<JobDeliveryJourneyArchiveDto> dtoList,
-        int jobId,
-        decimal currentBreakdownTotal)
-    {
-        var orderedGroups = dtoList
-            .Where(s => !IsUnchangedDateTimeRow(s.FieldName, s.OldValue, s.NewValue))
-            .GroupBy(s => s.UpdatedAt)
-            .OrderByDescending(g => g.Key)
-            .ToList();
-
-        var grandTotalByTimestamp = new Dictionary<DateTime, decimal>();
-        var runningTotal = currentBreakdownTotal;
-        foreach (var group in orderedGroups)
-        {
-            var pricingRows = group
-                .Where(s => s.ChangeType == nameof(DeliveryJourneyChangeType.JobUpdate)
-                            && !string.IsNullOrEmpty(s.FieldName)
-                            && s.FieldName.StartsWith("Pricing", StringComparison.Ordinal))
-                .ToList();
-
-            if (pricingRows.Count == 0)
-            {
-                continue;
-            }
-
-            grandTotalByTimestamp[group.Key] = runningTotal;
-            var groupDelta = pricingRows.Sum(r => ParseDecimal(r.NewValue) - ParseDecimal(r.OldValue));
-            runningTotal -= groupDelta;
-        }
-
-        return
-        [
-            .. orderedGroups
-                .Select(group =>
-                {
-                    var first = group.First();
-                    var localDate = infoService.ConvertUtcToTenantTimeZone(group.Key);
-                    var isCreation = first.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated);
-                    var creation = isCreation ? BuildCreationDisplay(first.NewValue, localDate) : default;
-
-                    return new DeliveryJourneyViewModel
-                    {
-                        Id = Guid.NewGuid(),
-                        JobId = jobId,
-                        Date = localDate,
-                        Title = GetTitle(first),
-                        Description = isCreation ? creation.Description : GetDescription([.. group], infoService.GetCulture()),
+                        Description = isCreation ? creation.Description : GetDescription(group, infoService.GetCulture()),
                         Icon = GetIcon(first.ChangeType, first.FieldName),
                         Tags = isCreation ? creation.Tags : [.. BuildTags(group, infoService.GetCulture())],
                         PerformedBy = ResolvePerformedBy(group),
@@ -898,24 +804,9 @@ public sealed partial class DeliveryJourneyService(
         decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0m;
 
     /// <summary>
-    /// Builds tag strings from live status update DTOs for display in the journey timeline.
+    /// Builds tag strings from status update DTOs for display in the journey timeline.
     /// </summary>
-    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyDto> group, CultureInfo culture) =>
-        group.SelectMany(s => new[]
-            {
-                !string.IsNullOrEmpty(s.FlightNumber) ? $"Flight: {s.FlightNumber}" : null,
-                BuildAgentTag(s.OldAgentName, s.NewAgentName),
-                BuildCourierTag(s.OldCourierName, s.NewCourierName),
-                BuildStatusTag(s.OldJobStatusName, s.NewJobStatusName),
-                BuildFieldTag(s.FieldName, s.OldValue, s.NewValue, culture)
-            })
-            .Where(tag => !string.IsNullOrWhiteSpace(tag))
-            .Distinct();
-
-    /// <summary>
-    /// Builds tag strings from archived status update DTOs for display in the journey timeline.
-    /// </summary>
-    private static IEnumerable<string> BuildTags(IGrouping<DateTime, JobDeliveryJourneyArchiveDto> group, CultureInfo culture) =>
+    private static IEnumerable<string> BuildTags(IGrouping<DateTime, IJobDeliveryJourneyEntry> group, CultureInfo culture) =>
         group.SelectMany(s => new[]
             {
                 !string.IsNullOrEmpty(s.FlightNumber) ? $"Flight: {s.FlightNumber}" : null,
@@ -1004,9 +895,9 @@ public sealed partial class DeliveryJourneyService(
     }
 
     /// <summary>
-    /// Gets a human-readable title for a live status update based on change type.
+    /// Gets a human-readable title for a status update based on change type.
     /// </summary>
-    private static string GetTitle(JobDeliveryJourneyDto dto) =>
+    private static string GetTitle(IJobDeliveryJourneyEntry dto) =>
         dto.ChangeType switch
         {
             nameof(DeliveryJourneyChangeType.JobCreated) => "Job Created",
@@ -1037,110 +928,9 @@ public sealed partial class DeliveryJourneyService(
         };
 
     /// <summary>
-    /// Gets a human-readable title for an archived status update based on change type.
+    /// Builds a detailed description from a list of status updates.
     /// </summary>
-    private static string GetTitle(JobDeliveryJourneyArchiveDto dto) =>
-        dto.ChangeType switch
-        {
-            nameof(DeliveryJourneyChangeType.JobCreated) => "Job Created",
-            nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
-                ? $"Status Changed to {dto.NewJobStatusName}"
-                : "Status Changed",
-            nameof(DeliveryJourneyChangeType.CourierAssignment) => !string.IsNullOrEmpty(dto.NewCourierName)
-                ? $"Assigned to {dto.NewCourierName}"
-                : !string.IsNullOrEmpty(dto.OldCourierName)
-                    ? $"Unassigned from {dto.OldCourierName}"
-                    : "Courier Assignment Changed",
-            nameof(DeliveryJourneyChangeType.AgentAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
-                ? $"Assigned to Agent {dto.NewAgentName}"
-                : !string.IsNullOrEmpty(dto.OldAgentName)
-                    ? $"Unassigned from Agent {dto.OldAgentName}"
-                    : "Agent Assignment Changed",
-            nameof(DeliveryJourneyChangeType.NetworkPartnerAssignment) => !string.IsNullOrEmpty(dto.NewAgentName)
-                ? $"Assigned to Network Partner {dto.NewAgentName}"
-                : "Network Partner Assignment Changed",
-            nameof(DeliveryJourneyChangeType.FlightAssignment) => !string.IsNullOrEmpty(dto.FlightNumber)
-                ? $"Flight {dto.FlightNumber} Assigned"
-                : "Flight Assignment Changed",
-            nameof(DeliveryJourneyChangeType.JobUpdate) => !string.IsNullOrEmpty(dto.FieldName)
-                ? $"{FormatFieldName(dto.FieldName)} Updated"
-                : "Job Updated",
-            nameof(DeliveryJourneyChangeType.VoiceAgent) => "Voice Agent",
-            _ => "Job Updated"
-        };
-
-    /// <summary>
-    /// Builds a detailed description from a list of live status updates.
-    /// </summary>
-    internal static string GetDescription(List<JobDeliveryJourneyDto> updates, CultureInfo culture = null)
-    {
-        var descriptions = new List<string>();
-
-        foreach (var dto in updates)
-        {
-            if (!string.IsNullOrEmpty(dto.OldJobStatusName) && !string.IsNullOrEmpty(dto.NewJobStatusName))
-            {
-                descriptions.Add($"Status: {dto.OldJobStatusName} → {dto.NewJobStatusName}");
-            }
-
-            if (!string.IsNullOrEmpty(dto.OldCourierName) && !string.IsNullOrEmpty(dto.NewCourierName))
-            {
-                descriptions.Add($"Courier: {dto.OldCourierName} → {dto.NewCourierName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.NewCourierName))
-            {
-                descriptions.Add($"Assigned to courier: {dto.NewCourierName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.OldCourierName))
-            {
-                descriptions.Add($"Removed from courier: {dto.OldCourierName}");
-            }
-
-            if (!string.IsNullOrEmpty(dto.OldAgentName) && !string.IsNullOrEmpty(dto.NewAgentName))
-            {
-                descriptions.Add($"Agent: {dto.OldAgentName} → {dto.NewAgentName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.NewAgentName))
-            {
-                descriptions.Add($"Assigned to agent: {dto.NewAgentName}");
-            }
-            else if (!string.IsNullOrEmpty(dto.OldAgentName))
-            {
-                descriptions.Add($"Removed from agent: {dto.OldAgentName}");
-            }
-
-            if (!string.IsNullOrEmpty(dto.FieldName))
-            {
-                var fieldDesc = FormatFieldName(dto.FieldName);
-                var oldValue = FormatDateTimeField(dto.FieldName, dto.OldValue, culture ?? CultureInfo.InvariantCulture);
-                var newValue = FormatDateTimeField(dto.FieldName, dto.NewValue, culture ?? CultureInfo.InvariantCulture);
-                if (!string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
-                {
-                    descriptions.Add($"{fieldDesc}: {oldValue} → {newValue}");
-                }
-                else if (!string.IsNullOrEmpty(newValue))
-                {
-                    descriptions.Add($"{fieldDesc} set to: {newValue}");
-                }
-                else if (!string.IsNullOrEmpty(oldValue))
-                {
-                    descriptions.Add($"{fieldDesc} cleared (was: {oldValue})");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(dto.Comments))
-            {
-                descriptions.Add(dto.Comments);
-            }
-        }
-
-        return string.Join("; ", descriptions.Distinct());
-    }
-
-    /// <summary>
-    /// Builds a detailed description from a list of archived status updates.
-    /// </summary>
-    internal static string GetDescription(List<JobDeliveryJourneyArchiveDto> updates, CultureInfo culture = null)
+    internal static string GetDescription(IEnumerable<IJobDeliveryJourneyEntry> updates, CultureInfo culture = null)
     {
         var descriptions = new List<string>();
 

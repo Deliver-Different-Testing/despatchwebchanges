@@ -578,6 +578,23 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
 
 
+    const flightFilterBar = (
+        <FlightFilterBar
+            activeAirlineOptions={activeAirlineOptions}
+            selectedAirline={selectedAirline}
+            selectedOutboundAirport={selectedOutboundAirport}
+            selectedInboundAirport={selectedInboundAirport}
+            outboundAirportOptions={outboundAirportOptions}
+            inboundAirportOptions={inboundAirportOptions}
+            includeNearbyAirports={includeNearbyAirports}
+            onFilterFlightsByAirline={onFilterFlightsByAirline}
+            onToggleNearbyAirports={onToggleNearbyAirports}
+            onOutboundAirportChange={onOutboundAirportChange}
+            onInboundAirportChange={onInboundAirportChange}
+            formatAirportCodeForDropdown={formatAirportCodeForDropdown}
+        />
+    );
+
     const renderFlightSection = () => {
         if (flightsLoading) {
             return <LoadingIndicator/>;
@@ -622,20 +639,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showNoFlightsAvailableMessage) {
             return (
                 <Stack gap={0} h="100%">
-                    <FlightFilterBar
-                        activeAirlineOptions={activeAirlineOptions}
-                        selectedAirline={selectedAirline}
-                        selectedOutboundAirport={selectedOutboundAirport}
-                        selectedInboundAirport={selectedInboundAirport}
-                        outboundAirportOptions={outboundAirportOptions}
-                        inboundAirportOptions={inboundAirportOptions}
-                        includeNearbyAirports={includeNearbyAirports}
-                        onFilterFlightsByAirline={onFilterFlightsByAirline}
-                        onToggleNearbyAirports={onToggleNearbyAirports}
-                        onOutboundAirportChange={onOutboundAirportChange}
-                        onInboundAirportChange={onInboundAirportChange}
-                        formatAirportCodeForDropdown={formatAirportCodeForDropdown}
-                    />
+                    {flightFilterBar}
 
                     <NoData
                         title="No flights found"
@@ -651,20 +655,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
         if (showFlightList) {
             return (
                 <Stack gap={0} h="100%">
-                    <FlightFilterBar
-                        activeAirlineOptions={activeAirlineOptions}
-                        selectedAirline={selectedAirline}
-                        selectedOutboundAirport={selectedOutboundAirport}
-                        selectedInboundAirport={selectedInboundAirport}
-                        outboundAirportOptions={outboundAirportOptions}
-                        inboundAirportOptions={inboundAirportOptions}
-                        includeNearbyAirports={includeNearbyAirports}
-                        onFilterFlightsByAirline={onFilterFlightsByAirline}
-                        onToggleNearbyAirports={onToggleNearbyAirports}
-                        onOutboundAirportChange={onOutboundAirportChange}
-                        onInboundAirportChange={onInboundAirportChange}
-                        formatAirportCodeForDropdown={formatAirportCodeForDropdown}
-                    />
+                    {flightFilterBar}
 
                     {/* Search input - compact */}
                     <Box px={4} py={4} style={{borderBottom: '1px solid var(--mantine-color-default-border)'}}>

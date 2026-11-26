@@ -12,41 +12,13 @@ namespace DespatchWeb.Tests.Repositories;
 /// Tests the refactored query that now uses direct mappings and queries both live and archived tables.
 /// Uses SQLite in-memory database with shared connection for parallel context queries.
 /// </summary>
-public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
+public class JobRepositoryPodSearchDownloadTests : JobRepositoryTestBase
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryPodSearchDownloadTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-
         // Default tenant setup
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
-
-    private DespatchContext CreateContext() => _db.CreateContext();
 
     [Fact]
     public async Task PodSearchDownloadAsync_ReturnsLiveAndArchivedJobs()

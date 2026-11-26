@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using Serilog;
@@ -125,54 +126,6 @@ public sealed class CiriumApiClient(
         return await httpClient.SendAsync(request, ct);
     }
 
-    private (string? BaseUrl, string? BearerToken) ResolveUrlAndToken()
-    {
-        var baseUrl = ResolveBaseUrl();
-        if (string.IsNullOrEmpty(baseUrl))
-        {
-            Log.Error("Unable to determine Integration Manager URL for Cirium gateway");
-            return (null, null);
-        }
-
-        var user = contextAccessor.HttpContext?.User;
-        var connection = user?.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
-        var tenantId = user?.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
-        var clientId = user?.Claims.FirstOrDefault(x => x.Type == "ClientID")?.Value;
-        var timeZone = user?.Claims.FirstOrDefault(x => x.Type == "TimeZone")?.Value;
-        var userName = user?.FindFirst(ClaimTypes.Name)?.Value;
-
-        if (string.IsNullOrEmpty(connection) || string.IsNullOrEmpty(tenantId) ||
-            string.IsNullOrEmpty(timeZone) || string.IsNullOrEmpty(userName))
-        {
-            Log.Error("Missing required user claims for Integration Manager Cirium JWT");
-            return (baseUrl.TrimEnd('/'), null);
-        }
-
-        var token = AuthenticationExtensions.CreateApiToken(userName,
-            int.Parse(tenantId),
-            connection,
-            timeZone,
-            string.IsNullOrEmpty(clientId) ? null : int.Parse(clientId));
-        var bearerToken = new JwtSecurityTokenHandler().WriteToken(token);
-
-        return (baseUrl.TrimEnd('/'), bearerToken);
-    }
-
-    private string? ResolveBaseUrl()
-    {
-        if (environment.IsDevelopment())
-        {
-            return Environment.GetEnvironmentVariable("IntegrationManagerUrl");
-        }
-
-        var httpContext = contextAccessor.HttpContext;
-        if (httpContext is null)
-        {
-            return null;
-        }
-
-        var req = httpContext.Request;
-        var host = req.Host.Value?.Replace("despatch", "integrationmanager", StringComparison.OrdinalIgnoreCase);
-        return $"{req.Scheme}://{host}";
-    }
+    private (string? BaseUrl, string? BearerToken) ResolveUrlAndToken() =>
+        IntegrationManagerAuth.ResolveUrlAndToken(contextAccessor, environment, nameof(CiriumApiClient));
 }

@@ -33,7 +33,7 @@ public class AgentExportTests : IAsyncDisposable
     private const string Hub = "https://hub.test.example";
     private const string Window = "since=2026-03-01&until=2026-03-10";
 
-    private readonly RsaSecurityKey _hubKey = new(RSA.Create(2048)) { KeyId = "k" };
+    private readonly RsaSecurityKey _hubKey = AgentHubTestServerSupport.NewHubKey();
     private readonly SqliteTestDatabase _db = new();
     private WebApplication? _app;
 
@@ -49,13 +49,6 @@ public class AgentExportTests : IAsyncDisposable
 
             return Task.CompletedTask;
         }
-    }
-
-    // Stands in for Hub's capabilities API (Access Control verbs AND hub tiles).
-    private sealed class FixedCapabilities(IReadOnlySet<string> held) : IAgentCapabilitySource
-    {
-        public Task<IReadOnlySet<string>> GetAsync(ClaimsPrincipal user, CancellationToken cancellationToken = default) =>
-            Task.FromResult(held);
     }
 
     private async Task<HttpClient> Server(bool grantLive = true, string[]? capabilities = null)
@@ -77,36 +70,14 @@ public class AgentExportTests : IAsyncDisposable
         });
         builder.Services.Replace(ServiceDescriptor.Singleton<IAgentClaimsEnricher, TestGroupEnricher>());
         builder.Services.Replace(ServiceDescriptor.Singleton<IAgentCapabilitySource>(
-            new FixedCapabilities((capabilities ?? [.. AgentCapabilities.All]).ToHashSet())));
-        builder.Services.PostConfigure<JwtBearerOptions>(AgentTokenAuthentication.Scheme, o =>
-        {
-            var config = new OpenIdConnectConfiguration { Issuer = Hub + "/" };
-            config.SigningKeys.Add(_hubKey);
-            o.Configuration = config;
-            o.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(config);
-        });
-        builder.Services.AddControllers().AddApplicationPart(typeof(AgentExportController).Assembly);
-        builder.Services.AddAuthorization();
-        _app = builder.Build();
-        _app.UseAuthentication();
-        _app.UseAgentRouteAllowList();
-        _app.UseAuthorization();
-        _app.MapControllers();
-        await _app.StartAsync();
+            new FixedAgentCapabilities((capabilities ?? [.. AgentCapabilities.All]).ToHashSet())));
+        AgentHubTestServerSupport.TrustHubKey(builder.Services, _hubKey, Hub);
+        _app = await AgentHubTestServerSupport.StartAgentAppAsync(builder, typeof(AgentExportController).Assembly);
         return _app.GetTestClient();
     }
 
-    private string Token(string group) => new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
-    {
-        Issuer = Hub + "/",
-        Audience = "dfrnt-apps",
-        Expires = DateTime.UtcNow.AddMinutes(15),
-        Subject = new ClaimsIdentity([
-            new Claim("sub", "u1"), new Claim("CurrentTenantID", "7"), new Claim("StaffID", "42"), new Claim("ClientTypeId", "4"),
-            new Claim("grant_id", "g1"), new Claim("scope", "read"), new Claim("auth_kind", "agent"), new Claim("TestGroup", group)
-        ]),
-        SigningCredentials = new SigningCredentials(_hubKey, SecurityAlgorithms.RsaSha256)
-    });
+    private string Token(string group) =>
+        AgentHubTestServerSupport.CreateAgentToken(_hubKey, Hub, group);
 
     private static async Task<HttpResponseMessage> Get(HttpClient client, string path, string? bearer)
     {

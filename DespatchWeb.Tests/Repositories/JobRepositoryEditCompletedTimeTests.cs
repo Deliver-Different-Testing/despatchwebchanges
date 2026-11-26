@@ -20,14 +20,8 @@ namespace DespatchWeb.Tests.Repositories;
 ///
 /// PickUpTime is auto-set when Status changes to PickedUp, using the pickup timezone.
 /// </summary>
-public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
+public class JobRepositoryEditCompletedTimeTests : JobRepositoryTestBase
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     // Timezone records seeded in the database
     private const int PstTimezoneId = 1;
@@ -35,10 +29,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
     private const int EstTimezoneId = 2;
     private const string EstTimezoneName = "Eastern Standard Time";
 
-    public JobRepositoryEditCompletedTimeTests()
+    public JobRepositoryEditCompletedTimeTests() : base(1)
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-
         // Seed timezone records for entity-based tests
         using var context = _db.CreateContext();
         context.TimeZones.AddRange(
@@ -46,10 +38,6 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
             new TimeZone { Id = EstTimezoneId, Name = EstTimezoneName, DisplayName = "Eastern Time", Code = "EST", OffsetHours = -5, OffsetString = "-05:00" }
         );
         context.SaveChanges();
-
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _tenantInfoServiceMock.GetStaffId().Returns(1);
 
         // Mock GetCurrentTimeFromTimeZone for specific timezones
         _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(
@@ -64,24 +52,6 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         _tenantInfoServiceMock.GetCurrentTimeFromTimeZone(null!)
             .Returns(TestDates.Now);
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private DespatchContext CreateContext() => _db.CreateContext();
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     [Fact]
     public async Task UpdateJobAsync_CompletedTime_DirectEdit_StoresWallClockTime()

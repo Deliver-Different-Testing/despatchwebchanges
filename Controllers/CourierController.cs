@@ -564,102 +564,51 @@ public class CourierController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> ExportTodayActiveDriversCsv([FromBody] TodayActiveDriversFilterRequest request)
+    public Task<IActionResult> ExportTodayActiveDriversCsv([FromBody] TodayActiveDriversFilterRequest request)
+    {
+        return ExportCsvAsync(() => courierReportService.GenerateTodayActiveDriversCsvAsync(request), nameof(ExportTodayActiveDriversCsv), mapInvalidQuery: true);
+    }
+
+    [HttpPost]
+    public Task<IActionResult> ExportComplianceCsv([FromBody] CourierComplianceFilterRequest request)
+    {
+        return ExportCsvAsync(() => courierReportService.GenerateComplianceCsvAsync(request), nameof(ExportComplianceCsv), mapInvalidQuery: true);
+    }
+
+    [HttpPost]
+    public Task<IActionResult> ExportAfterHoursScheduleCsv([FromBody] CourierAfterHoursFilterRequest request)
+    {
+        return ExportCsvAsync(() => courierReportService.GenerateAfterHoursScheduleCsvAsync(request), nameof(ExportAfterHoursScheduleCsv), mapInvalidQuery: true);
+    }
+
+    [HttpPost]
+    public Task<IActionResult> ExportDriverEmailsCsv([FromBody] PaginatedRequest request)
+    {
+        return ExportCsvAsync(() => courierReportService.GenerateDriverEmailsCsvAsync(request), nameof(ExportDriverEmailsCsv), mapInvalidQuery: false);
+    }
+
+    [HttpPost]
+    public Task<IActionResult> ExportDriverEarningsCsv([FromBody] PaginatedRequest request)
+    {
+        return ExportCsvAsync(() => courierReportService.GenerateDriverEarningsCsvAsync(request), nameof(ExportDriverEarningsCsv), mapInvalidQuery: true);
+    }
+
+    private async Task<IActionResult> ExportCsvAsync(
+        Func<Task<(byte[] FileBytes, string FileName)>> generate, string actionName, bool mapInvalidQuery)
     {
         try
         {
-            var (fileBytes, fileName) = await courierReportService.GenerateTodayActiveDriversCsvAsync(request);
+            var (fileBytes, fileName) = await generate();
             return File(fileBytes, "text/csv", fileName);
         }
-        catch (InvalidListQueryException e)
+        catch (InvalidListQueryException e) when (mapInvalidQuery)
         {
             return BadRequest(e.Message);
         }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(ExportTodayActiveDriversCsv)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ExportComplianceCsv([FromBody] CourierComplianceFilterRequest request)
-    {
-        try
-        {
-            var (fileBytes, fileName) = await courierReportService.GenerateComplianceCsvAsync(request);
-            return File(fileBytes, "text/csv", fileName);
-        }
-        catch (InvalidListQueryException e)
-        {
-            return BadRequest(e.Message);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(ExportComplianceCsv)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ExportAfterHoursScheduleCsv([FromBody] CourierAfterHoursFilterRequest request)
-    {
-        try
-        {
-            var (fileBytes, fileName) = await courierReportService.GenerateAfterHoursScheduleCsvAsync(request);
-            return File(fileBytes, "text/csv", fileName);
-        }
-        catch (InvalidListQueryException e)
-        {
-            return BadRequest(e.Message);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(ExportAfterHoursScheduleCsv)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ExportDriverEmailsCsv([FromBody] PaginatedRequest request)
-    {
-        try
-        {
-            var (fileBytes, fileName) = await courierReportService.GenerateDriverEmailsCsvAsync(request);
-            return File(fileBytes, "text/csv", fileName);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(ExportDriverEmailsCsv)));
-            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> ExportDriverEarningsCsv([FromBody] PaginatedRequest request)
-    {
-        try
-        {
-            var (fileBytes, fileName) = await courierReportService.GenerateDriverEarningsCsvAsync(request);
-            return File(fileBytes, "text/csv", fileName);
-        }
-        catch (InvalidListQueryException e)
-        {
-            return BadRequest(e.Message);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController),
-                    nameof(ExportDriverEarningsCsv)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierController), actionName));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
