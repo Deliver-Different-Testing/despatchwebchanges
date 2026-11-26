@@ -25,6 +25,9 @@ import {getSession} from '../../api/session';
 import {toastService} from '../../services/toastService';
 import {showPageToast} from '../pageToasts';
 import {requireDialog} from '../../components/dialogs/dialogRegistry';
+import {getIanaTimezone} from '../../utils/dateUtils';
+import {expiredRangeMessage} from '../../utils/dateRangeSummary';
+import setDateFilterDefaults from '../../utils/setDateFilterDefaults';
 
 const DEFAULT_TIME_ZONE = 'New Zealand Standard Time';
 
@@ -51,7 +54,12 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
     }), [contactId]);
     const defaultLayout = useMemo(() => createDefaultDispatchLayout(), []);
 
-    const [dateFilter, setDateFilter] = useDateFilter(DATE_FILTER_KEY(), loadDateFilter);
+    const ianaTimeZone = getIanaTimezone(timeZone);
+    const [dateFilter, setDateFilter] = useDateFilter(
+        DATE_FILTER_KEY(),
+        () => loadDateFilter(ianaTimeZone),
+        (range) => showPageToast(expiredRangeMessage(range, {timeZone: ianaTimeZone, isUs: isUsCustomer}), 'info'),
+    );
     const dateFilterRef = useRef(dateFilter);
     dateFilterRef.current = dateFilter;
 
@@ -122,12 +130,16 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
         }
     };
 
-    const refreshDateFilter = (next: DateFilterData) => {
+    const refreshDateFilter = useCallback((next: DateFilterData) => {
         const value = {startDate: next.startDate, endDate: next.endDate, useTime: next.useTime ?? false};
         dateFilterRef.current = value;
         setDateFilter(value);
         pushFilters();
-    };
+    }, [setDateFilter, pushFilters]);
+    const showAllDates = useCallback(
+        () => refreshDateFilter(setDateFilterDefaults(ianaTimeZone)),
+        [refreshDateFilter, ianaTimeZone],
+    );
 
     const toolbarActions: ToolbarActionsConfig = {
         settings: {onClick: () => void openSettings()},
@@ -162,6 +174,7 @@ export const DispatchScreen: React.FC<DispatchScreenProps> = ({deepLinkJobId}) =
                     deepLinkJobId={deepLinkJobId}
                     onExitColumnEditMode={handleExitColumnEditMode}
                     onLayoutBridgeReady={handleBridgeReady}
+                    onShowAllDates={showAllDates}
                 />
             </ErrorBoundary>
         </PageFrame>

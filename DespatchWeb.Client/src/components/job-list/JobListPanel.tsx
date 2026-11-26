@@ -248,6 +248,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               topSlot,
                                                               setUpdateSearchParamsCallback,
                                                               onWidenDates,
+                                                              dateEmptyState,
                                                           }) => {
     const getStorageKey = useCallback(
         (suffix: string): string => jobListStorageKey(storagePrefix, suffix),
@@ -840,6 +841,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             : undefined,
         [visibleJobs.length, hookData.isFetching, searchNotice, onWidenDates],
     );
+    const datesEmptyState = visibleJobs.length === 0 && !hookData.isFetching ? dateEmptyState : undefined;
     const matchLabel = visibleJobs.length > 0 ? matchModeLabel(searchNotice) : null;
     const handleSearchAnywhere = useCallback(
         () => hookDataRef.current.updateParams({job: searchNotice?.jobTerm ?? undefined, forceContains: true, page: 0}),
@@ -944,7 +946,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onLoadMore={hookData.fetchNextPage}
                 hasMore={hookData.hasMore}
                 isFetchingMore={hookData.isFetchingNextPage}
-                emptyState={noticeEmptyState ?? filterEmptyState}
+                emptyState={noticeEmptyState ?? datesEmptyState ?? filterEmptyState}
             />
             <JobListFooter
                 displayedCount={visibleJobs.length}

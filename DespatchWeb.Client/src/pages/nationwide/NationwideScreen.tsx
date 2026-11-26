@@ -18,6 +18,9 @@ import {buildRefreshIntervalOptions, resolveSavedInterval} from './lib/refreshIn
 import {loadDateFilterFrom, type StoredDateFilter} from '../../utils/dateFilterStorage';
 import {getSession} from '../../api/session';
 import {showPageToast} from '../pageToasts';
+import {getIanaTimezone} from '../../utils/dateUtils';
+import {expiredRangeMessage} from '../../utils/dateRangeSummary';
+import setDateFilterDefaults from '../../utils/setDateFilterDefaults';
 
 const DEFAULT_TIME_ZONE = 'New Zealand Standard Time';
 
@@ -57,12 +60,21 @@ export const NationwideScreen: React.FC<NationwideScreenProps> = ({deepLinkJobId
 
     const layoutToolbar = useLayoutToolbar({getBridge: () => layoutBridge, storageKeys, defaultLayout});
 
-    const [dateFilter, setDateFilter] = useDateFilter(dateFilterKey, () => loadDateFilterFrom(dateFilterKey));
+    const ianaTimeZone = getIanaTimezone(timeZone);
+    const [dateFilter, setDateFilter] = useDateFilter(
+        dateFilterKey,
+        () => loadDateFilterFrom(dateFilterKey, {timeZone: ianaTimeZone}),
+        (range) => showPageToast(expiredRangeMessage(range, {timeZone: ianaTimeZone, isUs: isUsCustomer}), 'info'),
+    );
     const refreshDateFilter = useCallback((data: DateFilterData) => {
         const next: StoredDateFilter = {...data, useTime: data.useTime ?? false};
         setDateFilter(next);
         bridge?.updateFilters(next);
     }, [setDateFilter, bridge]);
+    const showAllDates = useCallback(
+        () => refreshDateFilter(setDateFilterDefaults(ianaTimeZone)),
+        [refreshDateFilter, ianaTimeZone],
+    );
 
     const [views, setViews] = useState<DfrntPageViewModel[]>([]);
     const [viewsInitialized, setViewsInitialized] = useState(false);
@@ -122,6 +134,7 @@ export const NationwideScreen: React.FC<NationwideScreenProps> = ({deepLinkJobId
                     timeZone={timeZone}
                     deepLinkJobId={deepLinkJobId}
                     onLayoutBridgeReady={handleBridgeReady}
+                    onShowAllDates={showAllDates}
                 />
             </ErrorBoundary>
         </PageFrame>

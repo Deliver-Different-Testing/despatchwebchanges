@@ -153,4 +153,31 @@ describe('NationwideScreen', () => {
 
         expect(open.mock.calls[0][1]).toEqual({id: 0, text: ''});
     });
+
+    it('drops a saved custom range that has ended, says so once and pushes all time', async () => {
+        const {toastService} = await import('../../services/toastService');
+        localStorage.setItem('dateFilter-2-42', JSON.stringify({
+            startDate: '2020-11-21T00:00:00.000Z', endDate: '2020-11-23T00:00:00.000Z', useTime: false,
+        }));
+
+        await renderReady();
+
+        expect(toastService.showToast).toHaveBeenCalledWith(
+            expect.stringContaining('has ended. Showing all dates.'), 'info', undefined,
+        );
+        expect(toastService.showToast).toHaveBeenCalledTimes(1);
+        expect(bridge.updateFilters.mock.calls.at(-1)![0].startDate.valueOf()).toBe(0);
+    });
+
+    it('resets the date filter to all time when a list asks to show all dates', async () => {
+        localStorage.setItem('dateFilter-2-42', JSON.stringify({
+            startDate: '2099-11-21T00:00:00.000Z', endDate: '2099-11-23T00:00:00.000Z', useTime: false,
+        }));
+        await renderReady();
+
+        act(() => pageProps.mock.calls.at(-1)![0].onShowAllDates());
+
+        expect(bridge.updateFilters.mock.calls.at(-1)![0].startDate.valueOf()).toBe(0);
+        expect(new Date(JSON.parse(localStorage.getItem('dateFilter-2-42')!).startDate).valueOf()).toBe(0);
+    });
 });

@@ -1848,4 +1848,43 @@ describe('JobListPanel job search notices', () => {
         expect(await screen.findByText('Search too broad')).toBeInTheDocument();
         expect(screen.queryByTestId('job-search-match-bar')).not.toBeInTheDocument();
     });
+
+    describe('an empty list held to a date range', () => {
+        const dateEmptyState = (onAction = vi.fn()) => ({
+            title: 'No jobs in these dates',
+            message: 'The date filter is set to 21/Nov to 23/Nov.',
+            actionText: 'Show all dates',
+            onAction,
+        });
+
+        it('says the dates are why and offers to show all dates', async () => {
+            const onAction = vi.fn();
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig: noticeFetchConfig({}), dateEmptyState: dateEmptyState(onAction),
+            })}/>);
+
+            expect(await screen.findByText('The date filter is set to 21/Nov to 23/Nov.')).toBeInTheDocument();
+            await setupUser().click(screen.getByRole('button', {name: 'Show all dates'}));
+            expect(onAction).toHaveBeenCalledTimes(1);
+        });
+
+        it('announces the empty result as a status', async () => {
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.Dispatch, fetchConfig: noticeFetchConfig({}), dateEmptyState: dateEmptyState(),
+            })}/>);
+
+            expect(await screen.findByRole('status')).toHaveTextContent('No jobs in these dates');
+        });
+
+        it('yields to a job search notice', async () => {
+            renderWithMantineProviders(<JobListPanel {...createDefaultProps({
+                appPage: AppPage.JobSearch,
+                fetchConfig: noticeFetchConfig({searchNotice: notice({searchTooBroad: true})}),
+                dateEmptyState: dateEmptyState(),
+            })}/>);
+
+            expect(await screen.findByText('Search too broad')).toBeInTheDocument();
+            expect(screen.queryByText('Show all dates')).not.toBeInTheDocument();
+        });
+    });
 });

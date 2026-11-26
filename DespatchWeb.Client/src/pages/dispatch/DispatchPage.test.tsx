@@ -24,6 +24,7 @@ const jobListFetchConfig: {
     refetchInterval?: number | false;
     forcedCategory?: string;
     selectedJobId?: number | null;
+    dateEmptyState?: {message: string; onAction?: () => void};
 } = {};
 // What the page pushed into the mounted list instead of remounting it.
 const jobListParamPushes: Record<string, unknown>[] = [];
@@ -48,7 +49,7 @@ vi.mock('../../components/common/job-details/JobDetails', async () => {
 });
 
 vi.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix, onJobSelect, selectedJobId, onJobsLoaded, topSlot, fetchConfig, forcedCategory, setUpdateSearchParamsCallback}: {
+    JobListPanel: ({storagePrefix, onJobSelect, selectedJobId, onJobsLoaded, topSlot, fetchConfig, forcedCategory, setUpdateSearchParamsCallback, dateEmptyState}: {
         storagePrefix: string;
         onJobSelect?: (j: unknown) => void;
         selectedJobId?: number | null;
@@ -60,8 +61,10 @@ vi.mock('../../components/job-list/JobListPanel', () => ({
         };
         forcedCategory?: string;
         setUpdateSearchParamsCallback?: (cb: (params: Record<string, unknown>) => void) => void;
+        dateEmptyState?: {message: string; onAction?: () => void};
     }) => {
         if (storagePrefix === 'dispatchJobList') {
+            jobListFetchConfig.dateEmptyState = dateEmptyState;
             jobListFetchConfig.initialParams = fetchConfig?.initialParams;
             jobListFetchConfig.refetchInterval = fetchConfig?.refetchInterval;
             jobListFetchConfig.forcedCategory = forcedCategory;
@@ -768,5 +771,32 @@ describe('DispatchPage', () => {
 
             expect(getDispatchJobDetailMock).toHaveBeenCalledWith(4242);
         });
+    });
+});
+
+describe('DispatchPage empty list held to a date range', () => {
+    const NZ = 'Pacific/Auckland';
+
+    it('names the dates and hands "Show all dates" to the host', async () => {
+        const onLayoutBridgeReady = vi.fn();
+        const onShowAllDates = vi.fn();
+        renderPage({onLayoutBridgeReady, onShowAllDates});
+        const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+        act(() => { bridge.updateFilters({startDate: dayjs.tz('2026-11-21T00:00:00', NZ), endDate: dayjs.tz('2026-11-23T23:59:59', NZ)}); });
+
+        await waitFor(() => expect(jobListFetchConfig.dateEmptyState?.message).toBe('The date filter is set to 21/Nov to 23/Nov.'));
+        jobListFetchConfig.dateEmptyState!.onAction!();
+        expect(onShowAllDates).toHaveBeenCalledTimes(1);
+    });
+
+    it('says nothing about dates for all time', async () => {
+        const onLayoutBridgeReady = vi.fn();
+        renderPage({onLayoutBridgeReady, onShowAllDates: vi.fn()});
+        const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+        act(() => { bridge.updateFilters({startDate: dayjs(0), endDate: dayjs().add(1, 'day')}); });
+
+        await waitFor(() => expect(jobListFetchConfig.dateEmptyState).toBeUndefined());
     });
 });

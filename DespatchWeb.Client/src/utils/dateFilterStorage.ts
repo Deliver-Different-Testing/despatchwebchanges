@@ -22,6 +22,11 @@ export interface StoredDateFilter {
     useTime: boolean;
 }
 
+export interface LoadedDateFilter extends StoredDateFilter {
+    /** The stored custom range that ended before today and so was not restored. */
+    expiredRange?: {startDate: Dayjs; endDate: Dayjs};
+}
+
 export interface LoadDateFilterOptions {
     /**
      * Zone to resolve the recomputed "all time" end in. Affects only how the
@@ -29,10 +34,12 @@ export interface LoadDateFilterOptions {
      * timezone; Dispatch does not.
      */
     timeZone?: string;
+    /** Clock override for tests. */
+    now?: Dayjs;
 }
 
-function defaults(): StoredDateFilter {
-    const d = setDateFilterDefaults();
+function defaults(timeZone?: string): StoredDateFilter {
+    const d = setDateFilterDefaults(timeZone);
     return {startDate: d.startDate, endDate: d.endDate, useTime: d.useTime ?? false};
 }
 
@@ -42,11 +49,16 @@ function defaults(): StoredDateFilter {
  *
  * An epoch start means "all time", in which case the stored end is stale by
  * definition and is recomputed to now+24h so future jobs stay in range.
+ *
+ * A custom range that ended before today (in `timeZone`) is not restored: it
+ * would silently empty the grid on every load. Defaults come back with
+ * `expiredRange` set. Storage is left alone so this stays pure; the page
+ * persists the reset.
  */
 export function loadDateFilterFrom(
     key: string,
     options: LoadDateFilterOptions = {},
-): StoredDateFilter {
+): LoadedDateFilter {
     try {
         const raw = localStorage.getItem(key);
         if (!raw) return defaults();
@@ -56,9 +68,14 @@ export function loadDateFilterFrom(
         let endDate = dayjs(parsed.endDate);
         if (!startDate.isValid() || !endDate.isValid()) return defaults();
 
+        const now = options.now ?? dayjs();
         if (startDate.valueOf() === 0) {
-            const now = options.timeZone ? dayjs().tz(options.timeZone) : dayjs();
-            endDate = now.add(24, 'hours');
+            endDate = (options.timeZone ? now.tz(options.timeZone) : now).add(24, 'hours');
+        } else {
+            const startOfToday = (options.timeZone ? now.tz(options.timeZone) : now).startOf('day');
+            if (endDate.isBefore(startOfToday)) {
+                return {...defaults(options.timeZone), expiredRange: {startDate, endDate}};
+            }
         }
 
         return {startDate, endDate, useTime: parsed.useTime ?? false};

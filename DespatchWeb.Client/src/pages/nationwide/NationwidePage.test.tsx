@@ -11,6 +11,7 @@ const listProps: Record<string, {
     fetchConfig?: {queryKeyFn?: unknown; initialParams?: Record<string, unknown>; refetchInterval?: number | false};
     onJobSelect?: (job: unknown) => void;
     topSlot?: React.ReactNode;
+    dateEmptyState?: {message: string; onAction?: () => void};
 }> = {};
 // What each list was pushed via setUpdateSearchParamsCallback, keyed by storagePrefix.
 const listParamPushes: Record<string, Record<string, unknown>[]> = {};
@@ -786,5 +787,23 @@ describe('NationwidePage', () => {
 
             invalidateSpy.mockRestore();
         });
+    });
+});
+
+describe('NationwidePage empty lists held to a date range', () => {
+    it('names the dates in every list and hands "Show all dates" to the host', () => {
+        const NZ = 'Pacific/Auckland';
+        const onLayoutBridgeReady = vi.fn();
+        const onShowAllDates = vi.fn();
+        renderPage({onLayoutBridgeReady, onShowAllDates});
+        const bridge = onLayoutBridgeReady.mock.calls[0][0];
+
+        act(() => { bridge.updateFilters({startDate: dayjs.tz('2026-11-21T00:00:00', NZ), endDate: dayjs.tz('2026-11-23T23:59:59', NZ), useTime: false}); });
+
+        for (const prefix of ['nwNewJobList', 'nwPodJobList', 'nwRepriceJobList']) {
+            expect(listProps[prefix].dateEmptyState?.message).toBe('The date filter is set to 21/Nov to 23/Nov.');
+        }
+        listProps.nwNewJobList.dateEmptyState!.onAction!();
+        expect(onShowAllDates).toHaveBeenCalledTimes(1);
     });
 });

@@ -53,14 +53,17 @@ export const NoData: React.FC<NoDataProps> = ({
             <Text component="span" opacity={0.7} mb="xs">
                 {iconNode}
             </Text>
-            {/* A real heading, as the MUI `Typography variant="h6"` was — a bare `Text`
-                would quietly drop the role that callers' tests query by. */}
-            <Title order={3} size="h5" fw={600} mb="xs">
-                {title}
-            </Title>
-            <Text size="sm" c="dimmed" mb="md" maw={240}>
-                {message}
-            </Text>
+            {/* An empty result is a status message (WCAG 4.1.3): announce it without moving focus. */}
+            <div role="status">
+                {/* A real heading, as the MUI `Typography variant="h6"` was — a bare `Text`
+                    would quietly drop the role that callers' tests query by. */}
+                <Title order={3} size="h5" fw={600} mb="xs">
+                    {title}
+                </Title>
+                <Text size="sm" c="dimmed" mb="md" maw={240}>
+                    {message}
+                </Text>
+            </div>
             {showAction && (
                 <Button onClick={() => onAction?.()}>
                     {actionText}
