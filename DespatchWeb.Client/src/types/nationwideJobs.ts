@@ -9,12 +9,12 @@ export interface FlightCargoProcessingDto {
     deliverByTime?: string;
 }
 
-export interface FlightSegmentDto {
+interface FlightSegmentBase<TTime> {
     segmentOrder: number;
     carrierFsCode: string;
     flightNumber: string;
-    departureTime: string;
-    arrivalTime: string;
+    departureTime: TTime;
+    arrivalTime: TTime;
     departureAirportFsCode: string;
     departureTerminal?: string;
     arrivalAirportFsCode: string;
@@ -34,11 +34,15 @@ export interface FlightSegmentDto {
     airlineName?: string;
 }
 
-export interface FlightViewModelDto {
+export type FlightSegmentDto = FlightSegmentBase<string>;
+
+export type FlightSegment = FlightSegmentBase<Dayjs>;
+
+interface FlightViewModelBase<TTime, TSegment> {
     airline: string;
     flightNumber: string;
-    departureTime: string;
-    arrivalTime: string;
+    departureTime: TTime;
+    arrivalTime: TTime;
     departureAirport: string;
     arrivalAirport: string;
     duration: string;
@@ -58,60 +62,12 @@ export interface FlightViewModelDto {
     elapsedTime: number;
     score: number;
     connectionId: string;
-    flightSegments: FlightSegmentDto[];
+    flightSegments: TSegment[];
 }
 
-export interface FlightSegment {
-    segmentOrder: number;
-    carrierFsCode: string;
-    flightNumber: string;
-    departureTime: Dayjs;
-    arrivalTime: Dayjs;
-    departureAirportFsCode: string;
-    departureTerminal?: string;
-    arrivalAirportFsCode: string;
-    arrivalTerminal?: string;
-    flightEquipmentIataCode: string;
-    elapsedTime: number;
-    stopsInSegment: number;
-    departureAirportName?: string;
-    departureAirportCity?: string;
-    departureAirportTimeZone: string;
-    departureAirportId?: number;
-    arrivalAirportName?: string;
-    arrivalAirportCity?: string;
-    arrivalAirportTimeZone: string;
-    arrivalAirportId?: number;
-    aircraftName?: string;
-    airlineName?: string;
-}
+export type FlightViewModelDto = FlightViewModelBase<string, FlightSegmentDto>;
 
-export interface FlightViewModel {
-    airline: string;
-    flightNumber: string;
-    departureTime: Dayjs;
-    arrivalTime: Dayjs;
-    departureAirport: string;
-    arrivalAirport: string;
-    duration: string;
-    stops: number;
-    aircraft: string;
-    serviceClasses: string[];
-    isCodeShare: boolean;
-    serviceType: string;
-    isCharter: boolean;
-    serviceTypeDescription: string;
-    amount: number;
-    codeShareAirline: string;
-    airlineId: number;
-    departureTimeZone: string;
-    arrivalTimeZone: string;
-    isMultiSegment: boolean;
-    elapsedTime: number;
-    score: number;
-    connectionId: string;
-    flightSegments: FlightSegment[];
-}
+export type FlightViewModel = FlightViewModelBase<Dayjs, FlightSegment>;
 
 export interface GetFlightOptionsParams {
     jobId: number;

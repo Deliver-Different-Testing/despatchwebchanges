@@ -3,22 +3,12 @@
  */
 
 import type {ShowToastFn} from '../../../services/toastService';
+import type {IParcelDimensions} from '../../../types/interfaces/job.interface';
 
 /**
  * Parcel dimensions - mirrors IParcelDimensions from job.interface.ts
  */
-export interface ParcelDimensions {
-    itemId?: number;
-    itemName: string;
-    height?: number;
-    length?: number;
-    depth?: number;
-    weight?: number;
-    cubic?: number;
-    dimensions: string;
-    barcode?: string;
-    itemTypes?: Array<{ name: string; quantity: number }>;
-}
+export type ParcelDimensions = IParcelDimensions;
 
 /**
  * The record whose parcels are being edited. Live jobs, bulk jobs and recurring bookings are

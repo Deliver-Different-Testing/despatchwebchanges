@@ -48,12 +48,12 @@ export interface IFlightViewModel {
     _departureTimeZoneStr: string;
 }
 
-export interface IFlightSegment {
+interface IFlightSegmentCommon<TTime> {
     segmentOrder: number;
     carrierFsCode: string;
     flightNumber: string;
-    departureTime: Dayjs;
-    arrivalTime: Dayjs;
+    departureTime: TTime;
+    arrivalTime: TTime;
     departureAirportFsCode: string;
     departureTerminal?: string;
     arrivalAirportFsCode: string;
@@ -74,7 +74,9 @@ export interface IFlightSegment {
     aircraftName?: string;
     aircraftType?: string;
     airlineName?: string;
-    
+}
+
+export interface IFlightSegment extends IFlightSegmentCommon<Dayjs> {
     // Private
     _departureTimeStr: string;
     _arrivalTimeStr: string;
@@ -82,33 +84,7 @@ export interface IFlightSegment {
     _departureTimeZoneStr: string;
 }
 
-export interface IFlightSegmentDto {
-    segmentOrder: number;
-    carrierFsCode: string;
-    flightNumber: string;
-    departureTime: string;
-    arrivalTime: string;
-    departureAirportFsCode: string;
-    departureTerminal?: string;
-    arrivalAirportFsCode: string;
-    arrivalTerminal?: string;
-    flightEquipmentIataCode: string;
-    elapsedTime: number;
-    stopsInSegment: number;
-    departureAirportName?: string;
-    departureAirportCity?: string;
-    departureAirportCountry?: string;
-    departureAirportTimeZone: string;
-    departureAirportId?: number;
-    arrivalAirportName?: string;
-    arrivalAirportCity?: string;
-    arrivalAirportCountry?: string;
-    arrivalAirportTimeZone: string;
-    arrivalAirportId?: number;
-    aircraftName?: string;
-    aircraftType?: string;
-    airlineName?: string;
-}
+export type IFlightSegmentDto = IFlightSegmentCommon<string>;
 
 export interface AssignFlightToJobRequest {
     jobId: number;

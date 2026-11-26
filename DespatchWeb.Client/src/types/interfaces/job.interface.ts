@@ -335,14 +335,14 @@ export interface IPalletInfo {
 }
 
 export interface IAddressViewModel {
-    addressLine1: string;
-    addressLine2: string;
-    addressLine3: string;
-    addressLine4: string;
-    addressLine5: string;
-    addressLine6: string;
-    addressLine7: string;
-    addressLine8: string;
+    addressLine1: string;  // Company/Building/Complex
+    addressLine2: string;  // Unit/Suite
+    addressLine3: string;  // Street Number
+    addressLine4: string;  // Street Name
+    addressLine5: string;  // City (US) or Suburb (NZ)
+    addressLine6: string;  // State (US) or City (NZ)
+    addressLine7: string;  // ZIP Code (US) or Post Code (NZ)
+    addressLine8: string;  // Country
     latitude?: number;
     longitude?: number;
     fullAddress: string;
@@ -466,7 +466,8 @@ export interface InternalStatus extends ISuggestion {
     defaultMins: number | null;
 }
 
-export interface IDispatchJob {
+/** Dispatch row fields whose wire and client shapes are identical; IDispatchJob and IDispatchJobDto add the ones that differ. */
+interface IDispatchJobCommon {
     // Core identifiers
     selected?: boolean;
     /** Job search: an exact job-number match dated outside the searched window. */
@@ -488,8 +489,6 @@ export interface IDispatchJob {
     internalStatusId?: number;
     statusName?: string;
     status?: string;
-    time?: Dayjs;
-    booked: Dayjs;
     remain?: number;
 
     // Courier information
@@ -565,11 +564,9 @@ export interface IDispatchJob {
     searchText?: string;
     relatedJobs?: ISuggestion[];
 
-    assignedFlight?: IAssignedFlight;
     assignedAgent?: IAgent;
 
     conNote?: string;
-    followupTime?: Dayjs;
     fromAirportId?: number;
     toAirportId?: number;
     van?: boolean;
@@ -577,8 +574,14 @@ export interface IDispatchJob {
 
     pickUpTimeZone: ISuggestion;
     deliveryTimeZone: ISuggestion;
-    
-    
+}
+
+export interface IDispatchJob extends IDispatchJobCommon {
+    time?: Dayjs;
+    booked: Dayjs;
+    followupTime?: Dayjs;
+    assignedFlight?: IAssignedFlight;
+
     accessorialChargeGroupId?: number;
 
     // Children (from backend grouping)
@@ -600,117 +603,11 @@ export interface IDispatchJob {
     _aiSuggestionsLoading?: boolean;
 }
 
-export interface IDispatchJobDto {
-    // Core identifiers
-    selected?: boolean;
-    /** Job search: an exact job-number match dated outside the searched window. */
-    outsideDateRange?: boolean;
-    showCourierSearch: boolean;
-    id: number;
-    jobNo: string;
-    hasBeenRead: boolean;
-    isParentOrSingle?: boolean;
-    parentId: number;
-    isFlightJob: boolean;
-    isAgentJob: boolean;
-    isBulkJob: boolean;
-    isArchived: boolean;
-
-    // Status and timing information
-    speedId?: number;
-    statusId?: JobStatus;
-    internalStatusId?: number;
-    statusName?: string;
-    status?: string;
+export interface IDispatchJobDto extends IDispatchJobCommon {
     time?: string;
     booked: string;
-    remain?: number;
-
-    // Courier information
-    courier?: string;
-    courierSearchLoading: boolean;
-    assignedCourier?: ISuggestion;
-    courierData?: ICourierData;
-
-    // Addresses
-    from?: string;
-    toAddress?: string;
-    toSuburbID?: number;
-    pickupAddress: IAddressViewModel;
-    deliveryAddress: IAddressViewModel;
-    pickUpLongitude?: number;
-    pickUpLatitude?: number;
-    deliveryLongitude?: number;
-    deliveryLatitude?: number;
-    pickupContact?: string;
-    deliveryContact?: string;
-
-    // Routing data
-    direct?: boolean;
-    speed?: string;
-    notify?: string;
-    vehicle?: ISuggestion;
-
-    // Job properties
-    client?: string;
-    clientId?: number;
-    clientName?: string;
-    refA?: string;
-
-    jobType?: number;
-    minutes?: number;
-    pickupTime?: number;
-    alertLatePickup?: number;
-    deliveryTime?: number;
-    alertLateDelivery?: number;
-    // Late call fields
-    lp?: number;
-    ld?: number;
-
-    // Job flags
-    locked?: boolean;
-    isPartnerJob?: boolean;
-    /**
-     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
-     * payloads so the backend can disambiguate when a tenant has multiple active
-     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
-     */
-    partnerPairingId?: number | null;
-    invoiced?: boolean;
-    allowSplit?: boolean;
-    isActive?: boolean;
-    done?: boolean;
-    bulkJob?: boolean;
-    preBook?: boolean;
-
-    // Special delivery options
-    size?: ISuggestion;
-    return?: boolean;
-    dgClass?: number;
-    saturdayDelivery?: boolean;
-
-    // Special fields
-    childNotes?: string;
-    pickupFrom?: number;
-    rootParentId?: number;
-    displaySplitJobDetail?: boolean;
-
-    // UI helper fields
-    searchText?: string;
-    relatedJobs?: ISuggestion[];
-
-    assignedFlight?: IAssignedFlightDto;
-    assignedAgent?: IAgent;
-
-    conNote?: string;
     followupTime: string;
-    fromAirportId?: number;
-    toAirportId?: number;
-    van?: boolean;
-    truck?: boolean;
-
-    pickUpTimeZone: ISuggestion;
-    deliveryTimeZone: ISuggestion;
+    assignedFlight?: IAssignedFlightDto;
 
     // Children (from backend grouping)
     children?: IDispatchJobDto[];
