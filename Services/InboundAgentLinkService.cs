@@ -1,30 +1,78 @@
 #nullable enable
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace DespatchWeb.Services;
 
-public sealed class InboundAgentLinkService(IDbContextFactory<DespatchContext> contextFactory)
-    : IInboundAgentLinkService
+public sealed class InboundAgentLinkService(
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService tenantInfo,
+    ITenantClock clock) : IInboundAgentLinkService
 {
-    public async Task<string?> BuildJobLinkAsync(int jobId, CancellationToken cancellationToken = default)
+    private const int LinkLifetimeDays = 14;
+
+    public async Task<string?> MintJobLinkAsync(DespatchContext context, int jobId, int agentId,
+        CancellationToken cancellationToken = default)
     {
-        await using var ctx = await contextFactory.CreateDbContextAsync(cancellationToken);
-
-        var baseUrl = await ctx.TblSettings
-            .Select(s => s.InboundUrl)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (string.IsNullOrWhiteSpace(baseUrl))
+        var baseUrl = await GetBaseUrlAsync(context, cancellationToken);
+        if (baseUrl is null)
         {
             return null;
         }
 
-        var token = await ctx.TblSettings
-            .Select(_ => DespatchContext.EncryptJobIdReversible(jobId))
+        var jobDate = await context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => (DateTime?)j.UcjbDate)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return string.IsNullOrWhiteSpace(token) ? null : $"{baseUrl.TrimEnd('/')}/{token}";
+        var nowUtc = clock.UtcNow;
+        var startUtc = jobDate is { } date && date != default
+            ? Max(TimeZoneHelper.TenantLocalToUtc(date, tenantInfo.GetTenantTimeZone()), nowUtc)
+            : nowUtc;
+        var expiresUtc = startUtc.AddDays(LinkLifetimeDays);
+
+        await context.AgentAssignmentTokens
+            .Where(t => t.JobId == jobId && t.AgentId == agentId && t.RevokedUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedUtc, nowUtc), cancellationToken);
+
+        var (token, hash) = AgentLinkToken.Create();
+        context.AgentAssignmentTokens.Add(new AgentAssignmentToken
+        {
+            TokenHash = hash,
+            JobId = jobId,
+            AgentId = agentId,
+            CreatedUtc = nowUtc,
+            ExpiresUtc = expiresUtc
+        });
+
+        return $"{baseUrl}/{AgentLinkToken.Prefix}{token}";
+    }
+
+    public async Task<string?> BuildPreviewLinkAsync(int jobId, CancellationToken cancellationToken = default)
+    {
+        await using var ctx = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var baseUrl = await GetBaseUrlAsync(ctx, cancellationToken);
+        return baseUrl is null ? null : $"{baseUrl}/{AgentLinkToken.PreviewPlaceholder}";
+    }
+
+    public async Task RevokeJobTokensAsync(DespatchContext context, int jobId,
+        CancellationToken cancellationToken = default)
+    {
+        var nowUtc = clock.UtcNow;
+        await context.AgentAssignmentTokens
+            .Where(t => t.JobId == jobId && t.RevokedUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedUtc, nowUtc), cancellationToken);
+    }
+
+    private static DateTime Max(DateTime a, DateTime b) => a >= b ? a : b;
+
+    private static async Task<string?> GetBaseUrlAsync(DespatchContext context, CancellationToken cancellationToken)
+    {
+        var baseUrl = await context.TblSettings
+            .Select(s => s.InboundUrl)
+            .FirstOrDefaultAsync(cancellationToken);
+        return string.IsNullOrWhiteSpace(baseUrl) ? null : baseUrl.TrimEnd('/');
     }
 }

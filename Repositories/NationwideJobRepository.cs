@@ -580,15 +580,26 @@ public class NationwideJobRepository(
     public async Task<AgentAlertEmail> ComposeAgentAlertAsync(int agentId, int jobId, string emailSubject = null,
         string emailNote = null)
     {
-        var setting = await Context.AgentAlertSettings.AsNoTracking().OrderBy(s => s.Id).FirstOrDefaultAsync();
+        var alertType = await ResolveAgentAlertTypeAsync(jobId);
+        var inboundUrl = await inboundAgentLinkService.BuildPreviewLinkAsync(jobId) ?? string.Empty;
+        return await ComposeAgentAlertAsync(agentId, jobId, alertType, inboundUrl, emailSubject, emailNote);
+    }
+
+    private async Task<AgentAlertType> ResolveAgentAlertTypeAsync(int jobId)
+    {
         var leg = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
             .Select(j => new { j.UcjbNumber, j.FromAirportId, j.ToAirportId })
             .FirstOrDefaultAsync();
         ArgumentNullException.ThrowIfNull(leg);
 
-        var alertType = AgentAlertTypes.Resolve(leg.UcjbNumber, leg.FromAirportId, leg.ToAirportId);
-        var inboundUrl = await inboundAgentLinkService.BuildJobLinkAsync(jobId) ?? string.Empty;
+        return AgentAlertTypes.Resolve(leg.UcjbNumber, leg.FromAirportId, leg.ToAirportId);
+    }
+
+    private async Task<AgentAlertEmail> ComposeAgentAlertAsync(int agentId, int jobId, AgentAlertType alertType,
+        string inboundUrl, string emailSubject, string emailNote)
+    {
+        var setting = await Context.AgentAlertSettings.AsNoTracking().OrderBy(s => s.Id).FirstOrDefaultAsync();
         var tokens = await new AgentAlertTokenBuilder(Context, _infoService)
             .BuildAsync(jobId, agentId, inboundUrl, alertType);
 
@@ -628,8 +639,7 @@ public class NationwideJobRepository(
         }
 
         var staffId = _infoService.GetStaffId();
-        var email = await ComposeAgentAlertAsync(agentId, jobId, emailSubject, emailNote);
-        var (alertType, subject, htmlBody, replyToAddress) = email;
+        var alertType = await ResolveAgentAlertTypeAsync(jobId);
 
         // The duplicate check, the message and its log row commit together, so a re-assign or double-click sends
         // once and every sent alert has a log row. There is no unique index (legacy DB rules, and "Send again" adds
@@ -641,7 +651,7 @@ public class NationwideJobRepository(
             await using var transaction = await Context.Database.BeginTransactionAsync();
 
             foreach (var stale in Context.ChangeTracker.Entries()
-                         .Where(e => e.State == EntityState.Added && e.Entity is TucManualMessage or AgentAlertLog)
+                         .Where(e => e.State == EntityState.Added && e.Entity is TucManualMessage or AgentAlertLog or AgentAssignmentToken)
                          .ToList())
             {
                 stale.State = EntityState.Detached;
@@ -654,6 +664,12 @@ public class NationwideJobRepository(
                     jobId, agentId, alertType);
                 return AgentInboundEmailStatus.AlreadySent;
             }
+
+            // Minted here so the token row commits with the message that carries its link, and the earlier links
+            // for this job are revoked only when a new alert is actually going out.
+            var link = await inboundAgentLinkService.MintJobLinkAsync(Context, jobId, agentId) ?? string.Empty;
+            var (_, subject, htmlBody, replyToAddress) =
+                await ComposeAgentAlertAsync(agentId, jobId, alertType, link, emailSubject, emailNote);
 
             var message = new TucManualMessage
             {
@@ -1307,7 +1323,7 @@ public class NationwideJobRepository(
             return new AgentInboundEmailResult(AgentInboundEmailStatus.NoAgentEmail, null);
         }
 
-        var link = await inboundAgentLinkService.BuildJobLinkAsync(jobId);
+        var link = await inboundAgentLinkService.BuildPreviewLinkAsync(jobId);
         if (string.IsNullOrWhiteSpace(link))
         {
             return new AgentInboundEmailResult(AgentInboundEmailStatus.NoInboundUrl, agentEmail);
