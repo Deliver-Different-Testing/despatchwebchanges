@@ -485,6 +485,22 @@ describe('SimplePriceEditDialog', () => {
     });
 
     describe('State Reset', () => {
+        const closeAndReopen = async (
+            rerender: (ui: React.ReactElement) => void,
+            props: SimplePriceEditDialogProps,
+        ) => {
+            await act(async () => {
+                rerender(
+                    <SimplePriceEditDialog {...props} open={false} />
+                );
+            });
+            await act(async () => {
+                rerender(
+                    <SimplePriceEditDialog {...props} open={true} />
+                );
+            });
+        };
+
         it('resets to default state when dialog reopens', async () => {
             const props = createDefaultProps({ currentCharge: 100.00 });
             const { rerender } = renderWithProviders(props);
@@ -493,19 +509,7 @@ describe('SimplePriceEditDialog', () => {
             await userEvent.click(screen.getByText('Final Price (use as-is)'));
             expect(screen.getAllByRole('radio')[2]).toBeChecked();
 
-            // Close dialog
-            await act(async () => {
-                rerender(
-                    <SimplePriceEditDialog {...props} open={false} />
-                );
-            });
-
-            // Reopen dialog
-            await act(async () => {
-                rerender(
-                    <SimplePriceEditDialog {...props} open={true} />
-                );
-            });
+            await closeAndReopen(rerender, props);
 
             // Should be back to recalculate mode
             const radios = screen.getAllByRole('radio');
@@ -523,19 +527,7 @@ describe('SimplePriceEditDialog', () => {
             await userEvent.click(screen.getByRole('button', { name: /Recalculate & save/i }));
             await screen.findByText('Price updated');
 
-            // Close dialog
-            await act(async () => {
-                rerender(
-                    <SimplePriceEditDialog {...props} open={false} />
-                );
-            });
-
-            // Reopen dialog
-            await act(async () => {
-                rerender(
-                    <SimplePriceEditDialog {...props} open={true} />
-                );
-            });
+            await closeAndReopen(rerender, props);
 
             // Should be back in edit state
             expect(screen.queryByText('Price updated')).not.toBeInTheDocument();
