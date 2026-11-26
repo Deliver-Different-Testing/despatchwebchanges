@@ -1560,13 +1560,15 @@ describe('JobListPanel', () => {
     });
 
     describe('Multi-Select', () => {
+        const createJobsAbc = () => [
+            createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
+            createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
+            createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
+        ];
+
         it('includes previously plain-clicked job when Ctrl multi-select begins', async () => {
             const user = setupUser();
-            const jobs = [
-                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
-                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
-                createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
-            ];
+            const jobs = createJobsAbc();
             await renderWithJobs(jobs);
 
             // Plain click first job (no modifier)
@@ -1583,11 +1585,7 @@ describe('JobListPanel', () => {
 
         it('plain-clicked job plus two Ctrl-clicks yields three selected', async () => {
             const user = setupUser();
-            const jobs = [
-                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
-                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
-                createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
-            ];
+            const jobs = createJobsAbc();
             await renderWithJobs(jobs);
 
             // Plain click JOB-A
@@ -1605,11 +1603,7 @@ describe('JobListPanel', () => {
 
         it('does not auto-add when multi-select already has items', async () => {
             const user = setupUser();
-            const jobs = [
-                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
-                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
-                createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
-            ];
+            const jobs = createJobsAbc();
             await renderWithJobs(jobs);
 
             // Ctrl+click two jobs directly (no prior plain click)
