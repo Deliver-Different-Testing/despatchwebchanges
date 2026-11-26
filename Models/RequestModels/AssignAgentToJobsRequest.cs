@@ -11,7 +11,8 @@ public sealed class AssignAgentToJobsRequest
 
     public string? EmailSubject { get; init; }
 
-    public string? EmailBody { get; init; }
+    /// <summary>The dispatcher's plain-text note, shown above the alert message.</summary>
+    public string? EmailNote { get; init; }
 
     /// <summary>Send the alert even though this agent already has it for this job (the dialog's "Send again").</summary>
     public bool Resend { get; init; }

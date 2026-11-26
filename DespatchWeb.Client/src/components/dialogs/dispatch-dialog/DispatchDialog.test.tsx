@@ -514,8 +514,7 @@ describe('DispatchDialog', () => {
     });
 
     describe('Agent email template', () => {
-        const DEFAULT_SUBJECT = 'New job assigned [JobNumber]';
-        const DEFAULT_BODY = 'Hi [AgentName]\n\nYou have been assigned a new job [JobNumber]. [InboundUrl]';
+        const SUBJECT = 'New job assigned KT107DF3';
 
         // Select the Agent radio and pick AgentOne so AgentEmailFields mounts (single job).
         async function pickAgent() {
@@ -527,28 +526,26 @@ describe('DispatchDialog', () => {
             fireEvent.click(option);
         }
 
-        it('shows the editable Subject/Message fields seeded from defaults and forwards the edits on confirm', async () => {
+        it('previews the alert and forwards the dispatcher\'s note, leaving the subject to the server', async () => {
             const user = setupUser();
             const onDispatchCourier = vi.fn().mockResolvedValue(undefined);
             mockPreview.mockResolvedValue({
                 status: 'Queued',
                 agentEmail: 'agent@example.com',
                 willEmail: true,
-                defaultSubject: DEFAULT_SUBJECT,
-                defaultBody: DEFAULT_BODY,
+                subject: SUBJECT,
+                html: '<p>Hi AgentOne</p>',
             });
 
             renderWithMantineProviders(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             await pickAgent();
 
-            expect(await screen.findByLabelText('Subject')).toHaveValue(DEFAULT_SUBJECT);
-            const bodyInput = screen.getByLabelText('Message');
-            expect(bodyInput).toHaveValue(DEFAULT_BODY);
-
-            await user.clear(bodyInput);
-            await user.click(bodyInput);
-            await user.paste('Edited body for the agent');
+            expect(await screen.findByLabelText('Subject')).toHaveValue(SUBJECT);
+            expect(screen.getByTitle('Agent email preview')).toHaveAttribute('srcdoc', '<p>Hi AgentOne</p>');
+            const noteInput = screen.getByLabelText(/Add a note/);
+            await user.click(noteInput);
+            await user.paste('Gate code 4411');
 
             fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to agent$/}));
 
@@ -556,8 +553,8 @@ describe('DispatchDialog', () => {
                 expect(onDispatchCourier).toHaveBeenCalledWith({
                     type: 'Agent',
                     destination: {id: 201, text: 'AgentOne'},
-                    emailSubject: DEFAULT_SUBJECT,
-                    emailBody: 'Edited body for the agent',
+                    emailSubject: undefined,
+                    emailNote: 'Gate code 4411',
                 });
             });
         });
@@ -571,7 +568,7 @@ describe('DispatchDialog', () => {
             await pickAgent();
 
             expect(await screen.findByText(/no email address on file/i)).toBeInTheDocument();
-            expect(screen.queryByLabelText('Message')).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(/Add a note/)).not.toBeInTheDocument();
 
             fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to agent$/}));
 

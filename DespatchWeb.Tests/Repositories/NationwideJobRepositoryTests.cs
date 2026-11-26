@@ -1,4 +1,4 @@
-﻿using DespatchWeb.Constants;
+using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -533,7 +533,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         Assert.Equal("agent@example.com", result.AgentEmail);
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
         Assert.Equal("agent@example.com", message.SendToEmailAddress);
-        Assert.Equal("New job assigned JOB001", message.Subject);
+        Assert.StartsWith("New job JOB001", message.Subject);
         var expectedReplyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
                               ?? "support@deliverdifferent.com";
         Assert.Equal(expectedReplyTo, message.ReplyToEmailAddress);
@@ -550,12 +550,13 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         job.DeliveryAddressLine1 = "ACME Freight";
         job.DeliveryAddressLine3 = "12";
         job.DeliveryAddressLine4 = "Queen Street";
-        job.DeliveryAddressLine6 = "Auckland";
+        job.DeliveryAddressLine5 = "Auckland";
         job.DeliverToContact = "Jane Doe";
         job.DeliverToPhone = "021 555 1234";
         job.UcjbQty = 3;
         job.UcjbWeight = 25.5;
         _context.TucJobs.Add(job);
+        _context.AgentAlertSettings.Add(new AgentAlertSetting { Enabled = true, DoorToDoorBody = "<p>Hi [AgentName], new job [JobNumber]</p><p>[DeliveryCompany] [DeliveryStreetNumber] [DeliveryStreetName] [DeliveryCity]</p><p>Arriving on [FlightNumber] at [FlightETA] from [FromSuburbCity]</p><p>With [Quantity] items weighing [Weight]</p><p>Contact [DeliveryContactName] on [DeliveryContactPhone]</p>" });
 
         var agent = CreateAgent(agentId, "Test Agent");
         agent.UcagFax = "agent@example.com";
@@ -588,9 +589,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         Assert.Contains("new job JOB001", body);
         Assert.Contains("ACME Freight 12 Queen Street Auckland", body);
         Assert.Contains("https://inbound.example.com/TOKEN123", body);
-        Assert.Contains("arriving on NZ200 at FORMATTED_ETA from Auckland", body);
-        Assert.Contains("with 3 items weighing 25.5", body);
-        Assert.Contains("contact name is Jane Doe and you can call them on 021 555 1234", body);
+        Assert.Contains("Arriving on NZ200 at FORMATTED_ETA from Auckland", body);
+        Assert.Contains("With 3 items weighing 25.5", body);
+        Assert.Contains("Contact Jane Doe on 021 555 1234", body);
     }
 
     [Fact]
@@ -611,7 +612,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         deliveryJob.DeliveryAddressLine1 = "ACME Freight";
         deliveryJob.DeliveryAddressLine3 = "12";
         deliveryJob.DeliveryAddressLine4 = "Queen Street";
-        deliveryJob.DeliveryAddressLine6 = "Auckland";
+        deliveryJob.DeliveryAddressLine5 = "Auckland";
         deliveryJob.DeliverToContact = "Jane Doe";
         deliveryJob.DeliverToPhone = "021 555 1234";
         deliveryJob.UcjbQty = 3;
@@ -621,6 +622,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ParentId = parentJobId;
 
         _context.TucJobs.AddRange(parentJob, deliveryJob, flightJob);
+        _context.AgentAlertSettings.Add(new AgentAlertSetting { Enabled = true, DoorToDoorBody = "<p>Hi [AgentName], new job [JobNumber]</p><p>[DeliveryCompany] [DeliveryStreetNumber] [DeliveryStreetName] [DeliveryCity]</p><p>Arriving on [FlightNumber] at [FlightETA] from [FromSuburbCity]</p><p>With [Quantity] items weighing [Weight]</p><p>Contact [DeliveryContactName] on [DeliveryContactPhone]</p>" });
 
         var agent = CreateAgent(agentId, "Test Agent");
         agent.UcagFax = "agent@example.com";
@@ -647,7 +649,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("arriving on NZ200 at FORMATTED_ETA from Auckland", message.UcmmMessage);
+        Assert.Contains("Arriving on NZ200 at FORMATTED_ETA from Auckland", message.UcmmMessage);
     }
 
     [Fact]
@@ -699,7 +701,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("weighing 23 kg", message.UcmmMessage);
+        Assert.Contains("2 pieces, 23 kg", message.UcmmMessage);
     }
 
     [Fact]
@@ -729,11 +731,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
-        Assert.Contains("weighing 23 lb", message.UcmmMessage);
+        Assert.Contains("2 pieces, 23 lb", message.UcmmMessage);
     }
 
     [Fact]
-    public async Task AddAgentToJobAsync_WithProvidedSubjectAndBody_UsesOverrideAndSubstitutes()
+    public async Task AddAgentToJobAsync_WithProvidedSubjectAndNote_UsesBoth()
     {
         // Arrange
         const int jobId = 100;
@@ -750,19 +752,19 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        // Act — dispatcher-edited template overrides the hardcoded default
+        // Act — the dispatcher's subject replaces the tenant's; the note sits above the message
         await repository.AddAgentToJobAsync(agentId, jobId, false,
-            "Custom subject [JobNumber]", "Custom body for [AgentName]");
+            "Custom subject [JobNumber]", "Bring the trolley");
 
         // Assert
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
         Assert.Equal("Custom subject JOB001", message.Subject);
-        // Body is rendered to branded HTML at send time; the substituted text is inside it.
-        Assert.Contains("Custom body for Test Agent", message.UcmmMessage);
+        Assert.Contains("Bring the trolley", message.UcmmMessage);
+        Assert.Contains("Hi Test Agent", message.UcmmMessage);
     }
 
     [Fact]
-    public async Task AddAgentToJobAsync_CustomBodyWithoutInboundUrlToken_StillIncludesAcceptButton()
+    public async Task AddAgentToJobAsync_TenantTemplateWithoutInboundUrlToken_StillIncludesAcceptButton()
     {
         // Arrange
         const int jobId = 100;
@@ -779,9 +781,13 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        // Act — dispatcher-edited body that drops the [InboundUrl] token entirely
-        await repository.AddAgentToJobAsync(agentId, jobId, false,
-            null, "Please accept, pick up, and complete the job in the portal.");
+        // Act — a tenant template that never mentions [InboundUrl]
+        _context.AgentAlertSettings.Add(new AgentAlertSetting
+        {
+            Enabled = true, DoorToDoorBody = "<p>Please accept, pick up, and complete the job in the portal.</p>"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        await repository.AddAgentToJobAsync(agentId, jobId);
 
         // Assert — the accept-job CTA is structural, so it renders from the resolved
         // inbound link even though the body copy never mentions [InboundUrl].
@@ -792,7 +798,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task AddAgentToJobAsync_UnknownTokenInEditedTemplate_LeftIntactWithoutThrowing()
+    public async Task AddAgentToJobAsync_UnknownTokenInTenantTemplate_LeftIntactWithoutThrowing()
     {
         // Arrange
         const int jobId = 100;
@@ -810,8 +816,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act — a token with no matching field must survive verbatim, not throw
-        var result = await repository.AddAgentToJobAsync(agentId, jobId, false,
-            null, "Ref [NotARealField] for [JobNumber]");
+        _context.AgentAlertSettings.Add(new AgentAlertSetting
+        {
+            Enabled = true, DoorToDoorBody = "<p>Ref [NotARealField] for [JobNumber]</p>"
+        });
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var result = await repository.AddAgentToJobAsync(agentId, jobId);
 
         // Assert
         Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
@@ -821,9 +831,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task AddAgentToJobAsync_QueuesMessageUsingHardcodedDefaultsAndEnvReplyTo()
+    public async Task AddAgentToJobAsync_WithNoSetting_UsesBuiltInDefaultsAndEnvReplyTo()
     {
-        // Arrange — the template is hardcoded and reply-to comes from the env var, not the DB.
+        // Arrange — no AgentAlertSetting row: the built-in wording, and reply-to from the env var.
         const int jobId = 100;
         const int agentId = 1;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
@@ -844,7 +854,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert
         Assert.Equal(AgentInboundEmailStatus.Queued, result.Status);
         var message = await _context.TucManualMessages.SingleAsync(TestContext.Current.CancellationToken);
-        Assert.Equal("New job assigned JOB001", message.Subject);
+        Assert.StartsWith("New job JOB001", message.Subject);
         var expectedReplyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
                               ?? "support@deliverdifferent.com";
         Assert.Equal(expectedReplyTo, message.ReplyToEmailAddress);

@@ -35,7 +35,7 @@ export interface DispatchConfirmation {
     destination: ISuggestion;
     /** Agent only, and only when the inbound-agent link will actually be emailed. */
     emailSubject?: string;
-    emailBody?: string;
+    emailNote?: string;
     /** Agent only: send the alert again although this agent already has it for this job. */
     resend?: boolean;
     /** Agent only — cascade the assignment onto the job's stop jobs. */
