@@ -545,7 +545,7 @@ public class NationwideJobController(
 
             var result = await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value,
                 jobRequestModel.JobId.Value, jobRequestModel.IncludeStopJobs ?? false,
-                jobRequestModel.EmailSubject, jobRequestModel.EmailBody, jobRequestModel.Resend);
+                jobRequestModel.EmailSubject, jobRequestModel.EmailNote, jobRequestModel.Resend);
 
             return Ok(new
             {
@@ -611,7 +611,7 @@ public class NationwideJobController(
             }
 
             var results = await repository.AssignAgentToJobsAsync(request.AgentId.Value, request.JobIds,
-                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailBody, request.Resend);
+                request.IncludeStopJobs ?? false, request.EmailSubject, request.EmailNote, request.Resend);
 
             return Ok(BulkAssignmentResponse(results));
         }
@@ -928,19 +928,22 @@ public class NationwideJobController(
         }
     }
 
-    public async Task<IActionResult> GetAgentInboundEmailPreview(int agentId, int jobId)
+    public async Task<IActionResult> GetAgentInboundEmailPreview(int agentId, int jobId, string note = null)
     {
         try
         {
             var preview = await repository.GetAgentInboundEmailPreviewAsync(agentId, jobId);
+            var email = preview.Status is AgentInboundEmailStatus.Queued or AgentInboundEmailStatus.AlreadySent
+                ? await repository.ComposeAgentAlertAsync(agentId, jobId, emailNote: note)
+                : null;
             return Json(new
             {
                 status = preview.Status.ToString(),
                 agentEmail = preview.AgentEmail,
                 willEmail = preview.WillEmail,
                 alertType = preview.AlertType?.ToString(),
-                defaultSubject = AgentEmailTemplates.DefaultSubject,
-                defaultBody = AgentEmailTemplates.DefaultBody
+                subject = email?.Subject,
+                html = email?.HtmlBody
             });
         }
         catch (Exception e)
