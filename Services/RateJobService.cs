@@ -35,32 +35,7 @@ public sealed class RateJobService(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobDetails);
-
-            if (!jobDetails.ClientId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            }
-
-            if (!jobDetails.FromId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
-            }
-
-            if (!jobDetails.ToId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
-            }
-
-            if (!jobDetails.SpeedId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            }
-
-            if (!jobDetails.SizeId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
-            }
+            ValidateNzJobDetails(jobDetails);
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
@@ -91,71 +66,12 @@ public sealed class RateJobService(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobDetails);
-            if (!jobDetails.SpeedId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            }
+            ValidateUsJobDetails(jobDetails);
 
-            if (!jobDetails.ClientId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            }
-
-            if (!jobDetails.SizeId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
-            }
-
-            // Get distances and airport info
-            var distanceResult = await CalculateJobRateUsAsync(
-                new JobRateRequest
-                {
-                    SpeedId = jobDetails.SpeedId.Value,
-                    PickupLat = jobDetails.PickupLat,
-                    PickupLong = jobDetails.PickupLong,
-                    DeliveryLat = jobDetails.DeliveryLat,
-                    DeliveryLong = jobDetails.DeliveryLong,
-                    IsFlightSpeed = jobDetails.IsFlightSpeed
-                }
-            );
+            var distanceResult = await CalculateUsDistanceAsync(jobDetails);
 
             // Calculate final rate
-            await jobCommandRepository.RateJobUsAsync(new RateJobUsDto
-            {
-                JobId = jobDetails.JobId,
-                ClientId = jobDetails.ClientId.Value,
-                Speed = jobDetails.SpeedId.Value,
-                FromZip = jobDetails.FromZip,
-                FromLat = jobDetails.PickupLat,
-                FromLong = jobDetails.PickupLong,
-                ToZip = jobDetails.ToZip,
-                ToLat = jobDetails.DeliveryLat,
-                ToLong = jobDetails.DeliveryLong,
-                TotalMiles = (decimal)distanceResult.TotalMiles, // Used for non-flight jobs
-                FromMiles = (decimal)distanceResult.FromMiles, // Used for flight jobs
-                ToMiles = (decimal)distanceResult.ToMiles, // Used for flight jobs
-                Weight = jobDetails.Weight.HasValue ? (int)jobDetails.Weight : 0,
-                Booked = jobDetails.BookedDate,
-                Size = jobDetails.SizeId.Value,
-                DangerousGoods = jobDetails.DangerousGoods,
-                TotalPallets = jobDetails.TotalPallets,
-                ExtraStopOffs = jobDetails.ExtraStopOffs,
-                DryIceWeight = (int)jobDetails.DryIceWeight,
-                PickupWaitTime = jobDetails.PickupWaitTime,
-                DeliveryWaitTime = jobDetails.DeliveryWaitTime,
-                FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
-                FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
-                ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
-                ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
-                Quantity = jobDetails.Quantity,
-                Cubic = jobDetails.Cubic,
-                IsPrebook = jobDetails.IsPrebook ?? false,
-                CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
-                PreviousRate = jobDetails.PreviousRate,
-                PrecomputedIsFromAddressAirport = jobDetails.PrecomputedIsFromAddressAirport,
-                PrecomputedIsToAddressAirport = jobDetails.PrecomputedIsToAddressAirport
-            });
+            await jobCommandRepository.RateJobUsAsync(BuildRateJobUsDto(jobDetails, distanceResult));
         }
         catch (Exception ex)
         {
@@ -174,32 +90,7 @@ public sealed class RateJobService(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobDetails);
-
-            if (!jobDetails.ClientId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            }
-
-            if (!jobDetails.FromId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
-            }
-
-            if (!jobDetails.ToId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
-            }
-
-            if (!jobDetails.SpeedId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            }
-
-            if (!jobDetails.SizeId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
-            }
+            ValidateNzJobDetails(jobDetails);
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
@@ -230,72 +121,11 @@ public sealed class RateJobService(
     {
         try
         {
-            ArgumentNullException.ThrowIfNull(jobDetails);
+            ValidateUsJobDetails(jobDetails);
 
-            if (!jobDetails.SpeedId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            }
+            var distanceResult = await CalculateUsDistanceAsync(jobDetails);
 
-            if (!jobDetails.ClientId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            }
-
-            if (!jobDetails.SizeId.HasValue)
-            {
-                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
-            }
-
-            // Get distances and airport info
-            var distanceResult = await CalculateJobRateUsAsync(
-                new JobRateRequest
-                {
-                    SpeedId = jobDetails.SpeedId.Value,
-                    PickupLat = jobDetails.PickupLat,
-                    PickupLong = jobDetails.PickupLong,
-                    DeliveryLat = jobDetails.DeliveryLat,
-                    DeliveryLong = jobDetails.DeliveryLong,
-                    IsFlightSpeed = jobDetails.IsFlightSpeed
-                }
-            );
-
-            // Get the rate without saving
-            var rate = await jobQueryRepository.GetJobRateUsAsync(new RateJobUsDto
-            {
-                JobId = jobDetails.JobId,
-                ClientId = jobDetails.ClientId.Value,
-                Speed = jobDetails.SpeedId.Value,
-                FromZip = jobDetails.FromZip,
-                FromLat = jobDetails.PickupLat,
-                FromLong = jobDetails.PickupLong,
-                ToZip = jobDetails.ToZip,
-                ToLat = jobDetails.DeliveryLat,
-                ToLong = jobDetails.DeliveryLong,
-                TotalMiles = (decimal)distanceResult.TotalMiles,
-                FromMiles = (decimal)distanceResult.FromMiles,
-                ToMiles = (decimal)distanceResult.ToMiles,
-                Weight = jobDetails.Weight.HasValue ? (int)jobDetails.Weight : 0,
-                Booked = jobDetails.BookedDate,
-                Size = jobDetails.SizeId.Value,
-                DangerousGoods = jobDetails.DangerousGoods,
-                TotalPallets = jobDetails.TotalPallets,
-                ExtraStopOffs = jobDetails.ExtraStopOffs,
-                DryIceWeight = (int)jobDetails.DryIceWeight,
-                PickupWaitTime = jobDetails.PickupWaitTime,
-                DeliveryWaitTime = jobDetails.DeliveryWaitTime,
-                FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
-                FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
-                ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
-                ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
-                Quantity = jobDetails.Quantity,
-                Cubic = jobDetails.Cubic,
-                IsPrebook = jobDetails.IsPrebook ?? false,
-                CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
-                PreviousRate = jobDetails.PreviousRate,
-                PrecomputedIsFromAddressAirport = jobDetails.PrecomputedIsFromAddressAirport,
-                PrecomputedIsToAddressAirport = jobDetails.PrecomputedIsToAddressAirport
-            });
+            var rate = await jobQueryRepository.GetJobRateUsAsync(BuildRateJobUsDto(jobDetails, distanceResult));
 
             return new ApiRerate { Rate = rate };
         }
@@ -564,6 +394,110 @@ public sealed class RateJobService(
                 Skipped = true,
                 Error = reason
             };
+    }
+
+    private static void ValidateNzJobDetails(JobRatingDetailsDtoNz jobDetails)
+    {
+        ArgumentNullException.ThrowIfNull(jobDetails);
+
+        if (!jobDetails.ClientId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+        }
+
+        if (!jobDetails.FromId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
+        }
+
+        if (!jobDetails.ToId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
+        }
+
+        if (!jobDetails.SpeedId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+        }
+
+        if (!jobDetails.SizeId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+        }
+    }
+
+    private static void ValidateUsJobDetails(JobRatingDetailsDto jobDetails)
+    {
+        ArgumentNullException.ThrowIfNull(jobDetails);
+
+        if (!jobDetails.SpeedId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+        }
+
+        if (!jobDetails.ClientId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+        }
+
+        if (!jobDetails.SizeId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+        }
+    }
+
+    private Task<JobRateResult> CalculateUsDistanceAsync(JobRatingDetailsDto jobDetails)
+    {
+        return CalculateJobRateUsAsync(
+            new JobRateRequest
+            {
+                SpeedId = jobDetails.SpeedId!.Value,
+                PickupLat = jobDetails.PickupLat,
+                PickupLong = jobDetails.PickupLong,
+                DeliveryLat = jobDetails.DeliveryLat,
+                DeliveryLong = jobDetails.DeliveryLong,
+                IsFlightSpeed = jobDetails.IsFlightSpeed
+            }
+        );
+    }
+
+    private static RateJobUsDto BuildRateJobUsDto(JobRatingDetailsDto jobDetails, JobRateResult distanceResult)
+    {
+        return new RateJobUsDto
+        {
+            JobId = jobDetails.JobId,
+            ClientId = jobDetails.ClientId!.Value,
+            Speed = jobDetails.SpeedId!.Value,
+            FromZip = jobDetails.FromZip,
+            FromLat = jobDetails.PickupLat,
+            FromLong = jobDetails.PickupLong,
+            ToZip = jobDetails.ToZip,
+            ToLat = jobDetails.DeliveryLat,
+            ToLong = jobDetails.DeliveryLong,
+            TotalMiles = (decimal)distanceResult.TotalMiles,
+            FromMiles = (decimal)distanceResult.FromMiles,
+            ToMiles = (decimal)distanceResult.ToMiles,
+            Weight = jobDetails.Weight.HasValue ? (int)jobDetails.Weight : 0,
+            Booked = jobDetails.BookedDate,
+            Size = jobDetails.SizeId!.Value,
+            DangerousGoods = jobDetails.DangerousGoods,
+            TotalPallets = jobDetails.TotalPallets,
+            ExtraStopOffs = jobDetails.ExtraStopOffs,
+            DryIceWeight = (int)jobDetails.DryIceWeight,
+            PickupWaitTime = jobDetails.PickupWaitTime,
+            DeliveryWaitTime = jobDetails.DeliveryWaitTime,
+            FromAgentId = distanceResult.FromAirport?.AgentId ?? jobDetails.FromAgentId,
+            FromAirportId = distanceResult.FromAirport?.AirportId ?? jobDetails.FromAirportId,
+            ToAgentId = distanceResult.ToAirport?.AgentId ?? jobDetails.ToAgentId,
+            ToAirportId = distanceResult.ToAirport?.AirportId ?? jobDetails.ToAirportId,
+            Quantity = jobDetails.Quantity,
+            Cubic = jobDetails.Cubic,
+            IsPrebook = jobDetails.IsPrebook ?? false,
+            CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
+            PreviousRate = jobDetails.PreviousRate,
+            PrecomputedIsFromAddressAirport = jobDetails.PrecomputedIsFromAddressAirport,
+            PrecomputedIsToAddressAirport = jobDetails.PrecomputedIsToAddressAirport
+        };
     }
 
     /// <summary>
