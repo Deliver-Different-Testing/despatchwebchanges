@@ -13,6 +13,7 @@ import {JobProperty} from '../../types/enums/job-property.enum';
 import type {Agent} from '../../types/agent';
 import type {FlightViewModel} from '../../types/nationwideJobs';
 import {formatDateForApiWithTzs, getIanaTimezone} from '../../utils/dateUtils';
+import {dateFilterEmptyState} from '../../components/job-list/dateFilterEmptyState';
 import {
     fetchNationwideJobsNew,
     fetchNationwideJobsPod,
@@ -148,6 +149,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                                                                   timeZone,
                                                                   deepLinkJobId,
                                                                   onLayoutBridgeReady,
+                                                                  onShowAllDates,
                                                               }) => {
     const ianaTimeZone = useMemo(() => getIanaTimezone(timeZone), [timeZone]);
 
@@ -601,6 +603,11 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
         statusId: currentJob.statusId,
     }] : []), [currentJob]);
 
+    const dateEmptyState = useMemo(
+        () => dateFilterEmptyState(dateFilter, onShowAllDates, {isUs: isUsCustomer, viewsSelected: selectedViewIds.length > 0}),
+        [dateFilter, onShowAllDates, isUsCustomer, selectedViewIds],
+    );
+
     const renderBoxContent = useCallback((boxName: string, headerSlot?: HTMLElement | null) => {
         switch (boxName) {
             case NationwideBoxes.NewJobs:
@@ -619,6 +626,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
                             listParamsRefs.current[key] = cb;
                         }}
                         headerSlot={headerSlot}
+                        dateEmptyState={dateEmptyState}
                     />
                 );
             }
@@ -718,7 +726,7 @@ export const NationwidePage: React.FC<NationwidePageProps> = ({
     }, [showToast, isUsCustomer, fetchConfigFor, selectJob, selectJobById, retargetWidget, refreshLists,
         mapConfig, mapItems, currentJob, refetchIntervalMs,
         widget, flightAgentJob, handleAddFlightToJob, handleAddAgentToJob, handleSendQuoteRequest,
-        handleOpenAgentSearchDialog, handleOpenRecoveryAgentDialog]);
+        handleOpenAgentSearchDialog, handleOpenRecoveryAgentDialog, dateEmptyState]);
 
     const handleRefreshBox = useCallback((boxName: string) => {
         const prefix = LIST_QUERY_KEY_PREFIX[boxName as keyof typeof LIST_QUERY_KEY_PREFIX];

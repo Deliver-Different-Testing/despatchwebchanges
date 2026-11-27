@@ -12,21 +12,11 @@ namespace DespatchWeb.Tests.Repositories;
 /// existing in TucJobs and TucJobArchives at the same time. PodSearchAsync queries both tables and
 /// used to return the job twice and count it twice, inflating both the result list and the total.
 /// </summary>
-public class JobRepositoryPodSearchDedupeTests : IAsyncDisposable
+public class JobRepositoryPodSearchDedupeTests : JobRepositoryTestBase
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryPodSearchDedupeTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
-
         // PodSearchAsync stamps a remaining-time on every row, which requires the eco settings row
         using var context = _db.CreateContext();
         context.TblEcoSettings.Add(new TblEcoSetting
@@ -36,22 +26,6 @@ public class JobRepositoryPodSearchDedupeTests : IAsyncDisposable
         });
         context.SaveChanges();
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     private static PodSearchRequest Request() => new()
     {

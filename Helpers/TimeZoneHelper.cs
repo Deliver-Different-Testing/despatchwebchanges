@@ -29,6 +29,22 @@ public static class TimeZoneHelper
         return new DateTimeOffset(dateTime, offset);
     }
 
+    /// <summary>
+    /// Converts a tenant-local wall-clock time to UTC. A time that does not exist (skipped by a spring-forward change)
+    /// is read at the zone's standard offset, which lands just after the gap whatever its length.
+    /// </summary>
+    public static DateTime TenantLocalToUtc(DateTime local, string timeZone)
+    {
+        var tz = GetTimeZoneInfo(timeZone);
+        var unspecified = DateTime.SpecifyKind(local, DateTimeKind.Unspecified);
+        if (tz.IsInvalidTime(unspecified))
+        {
+            return DateTime.SpecifyKind(unspecified - tz.BaseUtcOffset, DateTimeKind.Utc);
+        }
+
+        return TimeZoneInfo.ConvertTimeToUtc(unspecified, tz);
+    }
+
     private static TimeZoneInfo GetTimeZoneInfo(string timeZone)
     {
         if (string.IsNullOrWhiteSpace(timeZone))

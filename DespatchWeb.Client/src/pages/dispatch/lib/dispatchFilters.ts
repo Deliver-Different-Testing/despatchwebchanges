@@ -4,7 +4,8 @@ import {AppPage as LegacyAppPage} from '../../../types/enums/app-pages.enum';
 import setDateFilterDefaults from '../../../utils/setDateFilterDefaults';
 import type {DfrntPageViewModel} from '../../../types/interfaces/dfrnt-page-view-model.interface';
 import {DEFAULT_TASK_REFRESH_SECONDS} from '../../task-dashboard/refreshIntervalOptions';
-import {loadDateFilterFrom} from '../../../utils/dateFilterStorage';
+import {loadDateFilterFrom, type LoadedDateFilter} from '../../../utils/dateFilterStorage';
+import {getIanaTimezone} from '../../../utils/dateUtils';
 import {
     loadSelectedViewIdsFrom,
     loadSelectedViewsFrom,
@@ -23,6 +24,8 @@ export interface DispatchFilters {
 }
 
 export const SELECTED_VIEWS_KEY = () => `selectedViews-${LegacyAppPage.Dispatch}-${getContactId()}`;
+/** The date menu's `appPage` on Dispatch, which keys its saved option. */
+export const DATE_MENU_PAGE = 'home';
 export const DATE_FILTER_KEY = () => `dateFilter-${LegacyAppPage.Dispatch}-${getContactId()}`;
 export const REFRESH_INTERVAL_KEY = () => `refreshInterval-${LegacyAppPage.Dispatch}-${getContactId()}`;
 export const DRIVER_LOCATION_REFRESH_KEY = () => `driverLocationRefreshInterval-${LegacyAppPage.Dispatch}-${getContactId()}`;
@@ -114,10 +117,11 @@ export function persistSelectedViews(views: DfrntPageViewModel[]): void {
  * Read the persisted date filter, mirroring home.controller.ts
  * `loadDateFilterFromStorage`: when "all time" (epoch start) is stored, the end
  * is recomputed to now+24h so future jobs stay in range. Falls back to
- * `setDateFilterDefaults()` when nothing is stored or parsing fails.
+ * `setDateFilterDefaults()` when nothing is stored or parsing fails. A custom
+ * range that ended before today (tenant zone) comes back as all time.
  */
-export function loadDateFilter(): {startDate: Dayjs; endDate: Dayjs; useTime: boolean} {
-    return loadDateFilterFrom(DATE_FILTER_KEY());
+export function loadDateFilter(timeZone: string = getIanaTimezone()): LoadedDateFilter {
+    return loadDateFilterFrom(DATE_FILTER_KEY(), {timeZone, appPage: DATE_MENU_PAGE});
 }
 
 /** Build the initial filters from persisted view selection + date range. */

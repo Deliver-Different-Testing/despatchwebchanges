@@ -19,7 +19,8 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
-    ActionIcon, Box, Button, Divider, Group, Popover, Radio, Select, Stack, Text, Tooltip,
+    ActionIcon, Box, Button, Divider, Group, Indicator, Pill, Popover, Radio, Select, Stack, Text, Tooltip,
+    VisuallyHidden,
 } from '@mantine/core';
 import {DateInput} from '@mantine/dates';
 import {Calendar, CalendarRange} from 'lucide-react';
@@ -28,7 +29,9 @@ import {getIanaTimezone, getInputDateFormat, getTimezoneName} from '../../../uti
 import {getMinsSelectionOptions} from '../../../utils/MinsSelectionOptions';
 import {getContactId} from '../../../api/session';
 import {Icon} from '../icon/Icon';
-import {toolbarIconButtonClassName, toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
+import {badgeOverflowStyle, toolbarIconButtonClassName, toolbarIconButtonStyle} from '../app-toolbar/toolbarIconStyles';
+import {formatDateRange} from '../../../utils/dateRangeSummary';
+import {isAllTimeStart} from '../../../utils/dateFilterStorage';
 
 /** The string form `DateInput` speaks. */
 const ISO_DATE = 'YYYY-MM-DD';
@@ -82,7 +85,7 @@ function setDateFilterDefaults(ianaTimeZone: string): DateFilterData {
 
 /** An epoch start is "all time", which is no custom range, so offer the last week instead. */
 function customDateDraft(committed: DateFilterData | null, ianaTimeZone: string): DateFilterData {
-    if (committed && committed.startDate.valueOf() !== 0) {
+    if (committed && !isAllTimeStart(committed)) {
         return {startDate: committed.startDate, endDate: committed.endDate};
     }
     const now = dayjs().tz(ianaTimeZone);
@@ -145,7 +148,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
         // The parent already restored the applied range; emitting here would overwrite it.
         if (option === 'custom_date') {
             // An epoch start is "all time" (see customDateDraft), so the radio follows what the page fetches.
-            if (dateFilterData?.startDate.valueOf() === 0) {
+            if (isAllTimeStart(dateFilterData)) {
                 setSelectedRangeOption('all_time');
                 try {
                     localStorage.setItem(storageKey, 'all_time');
@@ -194,9 +197,21 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
 
             if (startChanged) setStartDate(dateFilterData.startDate);
             if (endChanged) setEndDate(dateFilterData.endDate);
+
+            // A reset to all time from outside the menu (the grid's "Show all dates", or an
+            // expired saved range) must not leave a dated option selected.
+            if (prev && startChanged && isAllTimeStart(dateFilterData)
+                && (selectedRangeOption === 'custom_date' || selectedRangeOption === 'today')) {
+                setSelectedRangeOption('all_time');
+                try {
+                    localStorage.setItem(storageKey, 'all_time');
+                } catch {
+                    // Ignore
+                }
+            }
         }
         prevDateFilterRef.current = dateFilterData;
-    }, [dateFilterData]);
+    }, [dateFilterData]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Cleanup interval on unmount
     useEffect(() => {
@@ -382,11 +397,29 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
 
     const inputFormat = getInputDateFormat();
 
+    /** What the applied filter restricts to, for the toolbar; null when it is all time. */
+    const activeSummary = (() => {
+        switch (selectedRangeOption) {
+            case 'today':
+                return 'Today';
+            case 'custom_minutes':
+                return `Next ${formatDuration(selectedMinsOption)}`;
+            case 'custom_date':
+                return dateFilterData && !isAllTimeStart(dateFilterData)
+                    ? formatDateRange(dateFilterData.startDate, dateFilterData.endDate, {})
+                    : null;
+            default:
+                return null;
+        }
+    })();
+    const descriptionId = `date-filter-summary-${appPage}`;
+
     const rangeSummary = selectedRangeOption === 'custom_date'
         ? `${startDate.format('MMM DD, YYYY')} — ${endDate.format('MMM DD, YYYY')}`
         : `All time — ${endDate.format('MMM DD, h:mm A')}`;
 
     return (
+        <Group gap={4} wrap="nowrap">
         <Popover
             opened={opened}
             onChange={setOpened}
@@ -406,10 +439,19 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                         size="lg"
                         onClick={handleClick}
                         aria-label="Date filter"
+                        aria-describedby={activeSummary ? descriptionId : undefined}
                         className={toolbarIconButtonClassName}
-                        style={toolbarIconButtonStyle}
+                        style={{...toolbarIconButtonStyle, ...badgeOverflowStyle}}
                     >
-                        <Icon lucide={Calendar} size={18}/>
+                        {/* Same dot as the Views button's count, so "a filter is on" reads alike across the bar. */}
+                        <Indicator
+                            disabled={!activeSummary}
+                            color="var(--dd-on-shell)"
+                            size={8}
+                            offset={2}
+                        >
+                            <Icon lucide={Calendar} size={18}/>
+                        </Indicator>
                     </ActionIcon>
                 </Tooltip>
             </Popover.Target>
@@ -498,6 +540,29 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                 </Group>
             </Popover.Dropdown>
         </Popover>
+            {activeSummary && (
+                <>
+                    <VisuallyHidden id={descriptionId}>{`Date filter set to ${activeSummary}`}</VisuallyHidden>
+                    <Pill
+                        visibleFrom="sm"
+                        withRemoveButton
+                        onRemove={handleClear}
+                        // Pill hides its remove button by default (it expects PillsInput's Backspace);
+                        // here it is the only way to clear from the bar, so it must be reachable.
+                        removeButtonProps={{'aria-label': 'Clear date filter', 'aria-hidden': false, tabIndex: 0}}
+                        styles={{
+                            root: {
+                                background: 'transparent',
+                                color: 'var(--dd-on-shell)',
+                                border: '1px solid var(--dd-on-shell)',
+                            },
+                        }}
+                    >
+                        {activeSummary}
+                    </Pill>
+                </>
+            )}
+        </Group>
     );
 };
 

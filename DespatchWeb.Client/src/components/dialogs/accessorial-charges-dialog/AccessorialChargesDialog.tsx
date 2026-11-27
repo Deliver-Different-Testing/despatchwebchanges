@@ -157,6 +157,40 @@ function renderLimits(charge: {
     );
 }
 
+function ChargeUnitSummary({charge}: {
+    charge: {
+        chargeType: string;
+        unitTypeName?: string;
+        ratePerUnit?: number | null;
+        percentageRate?: number | null;
+    };
+}): React.ReactElement {
+    return (
+        <>
+            {charge.unitTypeName && (
+                <Group gap={4} wrap="nowrap">
+                    {isAutoPopulated(charge) && (
+                        <Box c="dimmed" style={{display: 'flex'}}>
+                            <Icon lucide={Lock} size={12}/>
+                        </Box>
+                    )}
+                    <Text size="sm" c="dimmed">{charge.unitTypeName}</Text>
+                </Group>
+            )}
+            {(charge.chargeType === 'hourly' || charge.chargeType === 'per_unit') && charge.ratePerUnit != null && (
+                <Text size="sm" c="dimmed">
+                    {'×'} {formatCurrency(charge.ratePerUnit)}
+                </Text>
+            )}
+            {charge.chargeType === 'percentage' && charge.percentageRate != null && (
+                <Text size="sm" c="dimmed">
+                    {'×'} {charge.percentageRate}%
+                </Text>
+            )}
+        </>
+    );
+}
+
 export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> = ({
     open,
     onClose,
@@ -991,26 +1025,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                             disabled={row.isSaving || row.isDeleting || isAutoPopulated(charge)}
                                                                             min={charge.minimumQuantity ?? undefined}
                                                                         />
-                                                                        {charge.unitTypeName && (
-                                                                            <Group gap={4} wrap="nowrap">
-                                                                                {isAutoPopulated(charge) && (
-                                                                                    <Box c="dimmed" style={{display: 'flex'}}>
-                                                                                        <Icon lucide={Lock} size={12}/>
-                                                                                    </Box>
-                                                                                )}
-                                                                                <Text size="sm" c="dimmed">{charge.unitTypeName}</Text>
-                                                                            </Group>
-                                                                        )}
-                                                                        {(charge.chargeType === 'hourly' || charge.chargeType === 'per_unit') && charge.ratePerUnit != null && (
-                                                                            <Text size="sm" c="dimmed">
-                                                                                {'×'} {formatCurrency(charge.ratePerUnit)}
-                                                                            </Text>
-                                                                        )}
-                                                                        {charge.chargeType === 'percentage' && charge.percentageRate != null && (
-                                                                            <Text size="sm" c="dimmed">
-                                                                                {'×'} {charge.percentageRate}%
-                                                                            </Text>
-                                                                        )}
+                                                                        <ChargeUnitSummary charge={charge}/>
                                                                     </Group>
                                                                     {renderLimits(charge)}
                                                                 </Box>
@@ -1214,26 +1229,7 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                             min={charge.minimumQuantity ?? undefined}
                                                                             error={isSelected && missingInputIds.has(charge.accessorialChargeId) ? 'Required' : undefined}
                                                                         />
-                                                                        {charge.unitTypeName && (
-                                                                            <Group gap={4} wrap="nowrap">
-                                                                                {isAutoPopulated(charge) && (
-                                                                                    <Box c="dimmed" style={{display: 'flex'}}>
-                                                                                        <Icon lucide={Lock} size={12}/>
-                                                                                    </Box>
-                                                                                )}
-                                                                                <Text size="sm" c="dimmed">{charge.unitTypeName}</Text>
-                                                                            </Group>
-                                                                        )}
-                                                                        {(charge.chargeType === 'hourly' || charge.chargeType === 'per_unit') && charge.ratePerUnit != null && (
-                                                                            <Text size="sm" c="dimmed">
-                                                                                {'×'} {formatCurrency(charge.ratePerUnit)}
-                                                                            </Text>
-                                                                        )}
-                                                                        {charge.chargeType === 'percentage' && charge.percentageRate != null && (
-                                                                            <Text size="sm" c="dimmed">
-                                                                                {'×'} {charge.percentageRate}%
-                                                                            </Text>
-                                                                        )}
+                                                                        <ChargeUnitSummary charge={charge}/>
                                                                     </Group>
                                                                     {renderLimits(charge)}
                                                                     {(() => {

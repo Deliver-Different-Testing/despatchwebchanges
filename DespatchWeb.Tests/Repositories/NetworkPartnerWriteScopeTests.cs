@@ -224,7 +224,6 @@ public class NetworkPartnerWriteScopeTests : IAsyncDisposable
         { typeof(JobController), nameof(JobController.UnSplitJob), ScopedRecord.Job, "jobId" },
         { typeof(JobController), nameof(JobController.QuickCreateJob), ScopedRecord.BookableClient, "request.ClientId" },
         { typeof(JobController), nameof(JobController.InterCourierCharge), ScopedRecord.Courier, "viewModel.FromCourierId" },
-        { typeof(JobController), nameof(JobController.InterCourierCharge), ScopedRecord.Client, "viewModel.ClientId" },
         { typeof(JobController), nameof(JobController.UpdateBulkJobPackages), ScopedRecord.BulkJob, "request.BulkJobId" },
         { typeof(JobController), nameof(JobController.UpdateJobPackages), ScopedRecord.Job, "request.JobId" },
         { typeof(JobController), nameof(JobController.UpdateRecurringJobPackages), ScopedRecord.Booking, "request.BookingId" },

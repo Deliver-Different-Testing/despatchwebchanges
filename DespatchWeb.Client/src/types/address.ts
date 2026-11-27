@@ -5,24 +5,10 @@
  * Mirrors the AngularJS interfaces from job.interface.ts
  */
 
+import type {IAddressViewModel} from "./interfaces/job.interface";
+
 // Base address model with 8 address lines
-export interface AddressViewModel {
-    addressLine1: string;  // Company/Building/Complex
-    addressLine2: string;  // Unit/Suite
-    addressLine3: string;  // Street Number
-    addressLine4: string;  // Street Name
-    addressLine5: string;  // City (US) or Suburb (NZ)
-    addressLine6: string;  // State (US) or City (NZ)
-    addressLine7: string;  // ZIP Code (US) or Post Code (NZ)
-    addressLine8: string;  // Country
-    latitude?: number;
-    longitude?: number;
-    fullAddress: string;
-    toSuburbId?: number;
-    cbd?: boolean;
-    address?: string;
-    our_suburb?: string;
-}
+export type AddressViewModel = IAddressViewModel;
 
 // Extended address model for dialog with state abbreviation and shipment details
 export interface EditAddressDialogViewModel extends AddressViewModel {

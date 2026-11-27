@@ -37,12 +37,8 @@ public class JobReportServiceLargeDataTests
         );
     }
 
-    [Fact]
-    public async Task GenerateJobsReportAsync_LargeDataset_MemoryUsageReasonable()
+    private (JobReportService Service, PodSearchDownloadRequest Request) ArrangeJobsReport(IReadOnlyList<JobDownloadModel> jobs)
     {
-        // Arrange
-        const int recordCount = 20000;
-        var jobs = GenerateLargeJobDownloadDataset(recordCount);
         _jobQueryRepositoryMock.PodSearchDownloadAsync(
                 Arg.Any<IReadOnlyList<int>>(),
                 Arg.Any<IReadOnlyList<int>>(),
@@ -56,12 +52,21 @@ public class JobReportServiceLargeDataTests
         _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PutObjectResponse());
 
-        var service = CreateService();
         var request = new PodSearchDownloadRequest
         {
             FromDate = DateTimeOffset.Now.AddMonths(-1),
             ToDate = DateTimeOffset.Now
         };
+        return (CreateService(), request);
+    }
+
+    [Fact]
+    public async Task GenerateJobsReportAsync_LargeDataset_MemoryUsageReasonable()
+    {
+        // Arrange
+        const int recordCount = 20000;
+        var jobs = GenerateLargeJobDownloadDataset(recordCount);
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Force GC before measurement
         GC.Collect();
@@ -92,26 +97,7 @@ public class JobReportServiceLargeDataTests
     {
         // Arrange
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns(jobs);
-
-        // Skip S3 upload
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Act
         var result = await service.GenerateJobsReportAsync(request);
@@ -133,25 +119,7 @@ public class JobReportServiceLargeDataTests
         // Arrange
         const int recordCount = 10000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns(jobs);
-
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Act
         var stopwatch = Stopwatch.StartNew();
@@ -170,25 +138,7 @@ public class JobReportServiceLargeDataTests
         // Arrange - This tests memory handling with a very large dataset
         const int recordCount = 50000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns(jobs);
-
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Act & Assert - Should not throw OutOfMemoryException
         var result = await service.GenerateJobsReportAsync(request);
@@ -217,25 +167,7 @@ public class JobReportServiceLargeDataTests
             }
         };
 
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns(jobs);
-
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Act
         var result = await service.GenerateJobsReportAsync(request);
@@ -264,25 +196,7 @@ public class JobReportServiceLargeDataTests
             }
         };
 
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns(jobs);
-
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Act
         var result = await service.GenerateJobsReportAsync(request);
@@ -302,25 +216,7 @@ public class JobReportServiceLargeDataTests
     public async Task GenerateJobsReportAsync_EmptyDataset_ReturnsHeaderOnly()
     {
         // Arrange
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns([]);
-
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport([]);
 
         // Act
         var result = await service.GenerateJobsReportAsync(request);
@@ -424,25 +320,7 @@ public class JobReportServiceLargeDataTests
             new() { Id = 1, JobNumber = "TEST-001", Cubic = 4.0m, BookDate = TestDates.Now }
         };
 
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns(jobs);
-
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Act
         var result = await service.GenerateJobsReportAsync(request);
@@ -466,25 +344,7 @@ public class JobReportServiceLargeDataTests
             new() { Id = 2, JobNumber = "LIVE-001", Void = false, StatusName = "New", BookDate = TestDates.Now }
         };
 
-        _jobQueryRepositoryMock.PodSearchDownloadAsync(
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<IReadOnlyList<int>>(),
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<IReadOnlyList<int>>())
-            .Returns(jobs);
-
-        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new PutObjectResponse());
-
-        var service = CreateService();
-        var request = new PodSearchDownloadRequest
-        {
-            FromDate = DateTimeOffset.Now.AddMonths(-1),
-            ToDate = DateTimeOffset.Now
-        };
+        var (service, request) = ArrangeJobsReport(jobs);
 
         // Act
         var result = await service.GenerateJobsReportAsync(request);

@@ -108,45 +108,7 @@ export interface DateRange {
 
 // ── Open Jobs types ──
 
-export interface IOpenJobResponseDto {
-    jobId: number;
-    reference: string;
-    status: string;
-    pickupTime?: string;
-    pickupName: string;
-    pickupAddress: string;
-    deliveryTime?: string;
-    deliveryName: string;
-    deliveryAddress: string;
-    driverName: string;
-    completedToday: number;
-    lastCompleted?: string;
-    quantity: number;
-    packageType: string;
-    mileage: number;
-}
-
-export interface IOpenJobResponse {
-    jobId: number;
-    reference: string;
-    status: string;
-    pickupTime?: string;
-    pickupName: string;
-    pickupAddress: string;
-    deliveryTime?: string;
-    deliveryName: string;
-    deliveryAddress: string;
-    driverName: string;
-    completedToday: number;
-    lastCompleted?: string;
-    quantity: number;
-    packageType: string;
-    mileage: number;
-    _pickUpTimeStr?: string;
-    _deliveryTimeStr?: string;
-}
-
-export type {DriverViewModel, ViewJob} from '../../components/common/open-jobs-list/OpenJobsList.types';
+export type {DriverViewModel, IOpenJobResponse, IOpenJobResponseDto, ViewJob} from '../../components/common/open-jobs-list/OpenJobsList.types';
 
 // ── Table types ──
 

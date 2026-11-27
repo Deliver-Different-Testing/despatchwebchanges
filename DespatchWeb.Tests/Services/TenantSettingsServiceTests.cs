@@ -1,5 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Services;
+using DespatchWeb.Tests.Helpers;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -114,52 +115,11 @@ public class TenantSettingsServiceTests : IAsyncDisposable
         Assert.Null(await service.GetAppearanceDefaultAsync());
     }
 
-    private static TblSetting CreateMinimalSetting() => new()
+    private static TblSetting CreateMinimalSetting()
     {
-        SettingId = 1,
-        // All IsRequired() string properties must be set for SQLite NOT NULL constraints
-        SystemName = "Test",
-        Version = "1.0",
-        ApplicationName = "Test",
-        AdminEmail = "test@test.com",
-        ReportUserName = "test",
-        ReportPassword = "test",
-        ReportDomain = "test",
-        DefaultDateRange = "30",
-        EnquiryEmail = "test@test.com",
-        Smtpserver = "localhost",
-        ContactUsEmailSubject = "Test",
-        NewsImageDirectory = "/img",
-        StaffImageDirectory = "/img",
-        CommunicationFileDirectory = "/files",
-        JoinOurTeamEmail = "test@test.com",
-        JoinOurTeamSubject = "Test",
-        JobFeedbackSubject = "Test",
-        InternetJobEmailSubject = "Test",
-        InternetJobPoaemail = "test@test.com",
-        InternetJobPoaemailSubject = "Test",
-        ToolTipImageDirectory = "/img",
-        InternetRoot = "http://test",
-        InternetClientDetailsEmail = "test@test.com",
-        InternetClientDetailsSubject = "Test",
-        JoinOurTeamReplyFromEmail = "test@test.com",
-        JoinOurTeamReplySubject = "Test",
-        JoinOurTeamReplyMessage = "Test",
-        JobDetailsReplyFromEmail = "test@test.com",
-        TrackAndTrackReplyFromEmail = "test@test.com",
-        PpdDescription = "Test",
-        PpdAppliedDescription = "Test",
-        UncheckDirectEmailMessage = "Test",
-        UncheckDirectEmailSubject = "Test",
-        UncheckDirectEmailReply = "test@test.com",
-        // IsRequired() byte[] properties
-        FaxHeadLogo = [],
-        FaxHeadLogoSmall = [],
-        LetterHeadLogo = [],
-        // Audit fields
-        Created = TestDates.Now,
-        CreatedBy = "Test",
-        LastModified = TestDates.Now,
-        LastModifiedBy = "Test"
-    };
+        var setting = TestSettings.Minimal();
+        setting.InternetJobChargeType = 0;
+        setting.InternetJobStaffId = 0;
+        return setting;
+    }
 }

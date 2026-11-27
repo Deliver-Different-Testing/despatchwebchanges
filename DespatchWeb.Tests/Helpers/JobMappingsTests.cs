@@ -2879,11 +2879,8 @@ public class JobMappingsTests
         Assert.Equal("Stop Item", pallet.Notes);
     }
 
-    [Fact]
-    public void JobMappingCore_PartnerTenantName_FromJobPartnerDispatch_WhenSenderSide()
+    private static TucJob PartnerLinkedJob()
     {
-        // Sender side: the job carries a JobPartnerDispatch row that links to the
-        // pairing whose PartnerTenantName is the OTHER tenant's name.
         var pairing = new IntMgrPartnerPairing
         {
             Id = 7,
@@ -2895,7 +2892,7 @@ public class JobMappingsTests
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow
         };
-        var job = new TucJob
+        return new TucJob
         {
             UcjbId = 1,
             UcjbDate = new DateTime(2024, 6, 10),
@@ -2910,6 +2907,14 @@ public class JobMappingsTests
             TucJobItemChildJobs = new List<TucJobItem>(),
             TucJobNationwides = new List<TucJobNationwide>()
         };
+    }
+
+    [Fact]
+    public void JobMappingCore_PartnerTenantName_FromJobPartnerDispatch_WhenSenderSide()
+    {
+        // Sender side: the job carries a JobPartnerDispatch row that links to the
+        // pairing whose PartnerTenantName is the OTHER tenant's name.
+        var job = PartnerLinkedJob();
 
         var result = JobMappings.JobMappingCore(false).Compile()(job);
 
@@ -2922,32 +2927,7 @@ public class JobMappingsTests
         // The Job Details PartnerJobBanner keys the "Stale partner link" warning purely
         // on pairingId == null. If this mapping drops PartnerPairingId, every partner job
         // shows the stale banner regardless of the DB column, so assert it flows through.
-        var pairing = new IntMgrPartnerPairing
-        {
-            Id = 7,
-            PartnerTenantId = "200",
-            PartnerTenantName = "Acme Couriers",
-            PartnerBaseUrl = "https://peer.example.com",
-            Status = "Active",
-            OwnerTenantId = "100",
-            CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow
-        };
-        var job = new TucJob
-        {
-            UcjbId = 1,
-            UcjbDate = new DateTime(2024, 6, 10),
-            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
-            UcjbNumber = "JOB-001",
-            PartnerJobGuid = Guid.NewGuid(),
-            PartnerPairingId = 7,
-            PartnerPairing = pairing,
-            TucJobChangeRequests = new List<TucJobChangeRequest>(),
-            PricingBreakdownJobs = new List<PricingBreakdown>(),
-            TucJobItemJobs = new List<TucJobItem>(),
-            TucJobItemChildJobs = new List<TucJobItem>(),
-            TucJobNationwides = new List<TucJobNationwide>()
-        };
+        var job = PartnerLinkedJob();
 
         var result = JobMappings.JobMappingCore(false).Compile()(job);
 

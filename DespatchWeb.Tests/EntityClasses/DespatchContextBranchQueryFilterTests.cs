@@ -3,6 +3,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
+using DespatchWeb.Tests.Helpers;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.EntityClasses;
@@ -14,31 +15,8 @@ namespace DespatchWeb.Tests.EntityClasses;
 /// suburb on one of their branches' sites, and then the whole family. A visible job still shows its own client and
 /// couriers. Notes follow their job.
 /// </summary>
-public class DespatchContextBranchQueryFilterTests : IAsyncDisposable
+public class DespatchContextBranchQueryFilterTests : BranchScopedDbTest
 {
-    // Branch ids and the site each one sits on.
-    private const int Sydney = 1;
-    private const int Melbourne = 2;
-    private const int SydneySite = 43;
-    private const int MelbourneSite = 44;
-
-    private readonly SqliteTestDatabase _db = new();
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private static CancellationToken Ct => TestContext.Current.CancellationToken;
-
-    private DespatchContext CreateContext(ScopeContext scope)
-    {
-        var provider = Substitute.For<IScopeProvider>();
-        provider.Scope.Returns(scope);
-        return new DespatchContext(_db.Options, provider);
-    }
-
     // The signed-in staff member: tenant staff (own client 1), limited to these branches.
     private static ScopeContext Staff(int[]? branchIds, bool defaultBranchInScope = false, int[]? siteIds = null, ClientType type = ClientType.Tenant) =>
         new(ClientTypeId: (int)type, ClientId: 1, NpAgentId: null,
@@ -46,48 +24,6 @@ public class DespatchContextBranchQueryFilterTests : IAsyncDisposable
 
     private static ScopeContext SydneyOnly(bool defaultInScope = true) => Staff([Sydney], defaultInScope, [SydneySite]);
     private static ScopeContext MelbourneOnly() => Staff([Melbourne], false, [MelbourneSite]);
-
-    // ---- seed helpers ----
-
-    private static TucClient Client(int id, int? branchId, ClientType type = ClientType.Customer) => new()
-    {
-        UcclId = id, UcclName = $"Client {id}", UcclLegalName = "L", Smsname = "S", UcclCode = $"C{id}", UcclAddress = "1 St",
-        UcclExtraAddress = "", UcclPostal = "", UcclPostCode = "0", UcclPhone = "", UcclPhone2 = "", UcclMobile = "", UcclFax = "",
-        UcclType = "", Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T",
-        ClientTypeId = (int)type, BranchId = branchId
-    };
-
-    private static TucCourier Courier(int id, int? branchId) => new()
-    {
-        UccrId = id, Code = $"R{id}", UccrName = $"Courier{id}", UccrSurname = "X", UccrEmail = $"{id}@t.com", UccrMobile = "1",
-        Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T", BranchId = branchId
-    };
-
-    private static TucSuburb Suburb(int id, int? siteId) => new()
-    {
-        UcsuId = id, UcsuName = $"Suburb {id}", UcsuArea = 0, UcsuBaseRegion = 0, Smsname = "S", PostCode = "0",
-        Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T", SiteId = siteId
-    };
-
-    private static TucJob Job(int id, int? client = null, int? courier = null, int? from = null, int? to = null,
-        int? parent = null, int? root = null) => new()
-    {
-        UcjbId = id, UcjbNumber = $"J{id}", UcjbClientId = client, UcjbCourierId = courier, UcjbFrom = from, UcjbTo = to,
-        ParentId = parent, RootParentId = root
-    };
-
-    private async Task Seed(params object[] rows)
-    {
-        await using var seed = _db.CreateContext();
-        seed.AddRange(rows);
-        await seed.SaveChangesAsync(Ct);
-    }
-
-    private async Task<int[]> JobIds(ScopeContext scope)
-    {
-        await using var context = CreateContext(scope);
-        return await context.TucJobs.OrderBy(j => j.UcjbId).Select(j => j.UcjbId).ToArrayAsync(Ct);
-    }
 
     // The standard world: a Sydney client + courier, a Melbourne client + courier, and a house account.
     private Task SeedWorld() => Seed(

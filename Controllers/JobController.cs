@@ -1333,19 +1333,10 @@ public class JobController(
     {
         try
         {
-            foreach (var jobId in data.JobIds)
+            var guard = await RejectIfAnyJobBlockedAsync(data.JobIds);
+            if (guard != null)
             {
-                var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
-                if (partnerGuard != null)
-                {
-                    return partnerGuard;
-                }
-
-                var acceptanceGuard = await RejectIfRateNotAcceptedAsync(jobId);
-                if (acceptanceGuard != null)
-                {
-                    return acceptanceGuard;
-                }
+                return guard;
             }
 
             await dispatchJobService.DispatchJobsToCourierAsync(data.JobIds, data.CourierId);
@@ -1366,19 +1357,10 @@ public class JobController(
     {
         try
         {
-            foreach (var jobId in data.JobIds)
+            var guard = await RejectIfAnyJobBlockedAsync(data.JobIds);
+            if (guard != null)
             {
-                var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
-                if (partnerGuard != null)
-                {
-                    return partnerGuard;
-                }
-
-                var acceptanceGuard = await RejectIfRateNotAcceptedAsync(jobId);
-                if (acceptanceGuard != null)
-                {
-                    return acceptanceGuard;
-                }
+                return guard;
             }
 
             await jobCommandRepository.ReDispatchSelectedJobsAsync(data.JobIds);
@@ -2391,7 +2373,6 @@ public class JobController(
 
     [HttpPost]
     [RequireScope(ScopedRecord.Courier, "viewModel.FromCourierId", "viewModel.ToCourierId")]
-    [RequireScope(ScopedRecord.Client, "viewModel.ClientId")]
     [NetworkPartnerCapability(NpCapability.InterCourierCharge)]
     public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
     {
@@ -3365,6 +3346,26 @@ public class JobController(
             {
                 message = "This job has been dispatched to a partner; manage it from the partner-pairing side."
             });
+        }
+
+        return null;
+    }
+
+    private async Task<IActionResult> RejectIfAnyJobBlockedAsync(IEnumerable<int> jobIds)
+    {
+        foreach (var jobId in jobIds)
+        {
+            var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
+
+            var acceptanceGuard = await RejectIfRateNotAcceptedAsync(jobId);
+            if (acceptanceGuard != null)
+            {
+                return acceptanceGuard;
+            }
         }
 
         return null;

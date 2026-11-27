@@ -11,15 +11,10 @@ import { setupUser } from '../../../test/utils/setupUser';
 // ── Mocks ──────────────────────────────────────────────────────────
 
 const mockSearchActiveCouriers = vi.fn();
-const mockSearchActiveClients = vi.fn();
 const mockCreateInterCourierCharge = vi.fn();
 
 vi.mock('../../../api/courierApi', () => ({
     searchActiveCouriers: (...args: unknown[]) => mockSearchActiveCouriers(...args),
-}));
-
-vi.mock('../../../api/jobApi', () => ({
-    searchActiveClients: (...args: unknown[]) => mockSearchActiveClients(...args),
 }));
 
 vi.mock('../../../api/dispatchExecutorApi', () => ({
@@ -31,11 +26,6 @@ vi.mock('../../../api/dispatchExecutorApi', () => ({
 const courierSuggestions = [
     {id: 1, text: 'Courier Alpha'},
     {id: 2, text: 'Courier Beta'},
-];
-
-const clientSuggestions = [
-    {id: 10, text: 'Client One'},
-    {id: 20, text: 'Client Two'},
 ];
 
 const defaultProps: InterCourierChargeDialogProps = {
@@ -75,11 +65,9 @@ async function fillAutocomplete(label: string, searchText: string, optionText: s
 
 async function fillForm() {
     mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
-    mockSearchActiveClients.mockResolvedValue(clientSuggestions);
 
     await fillAutocomplete('From courier', 'Courier', 'Courier Alpha');
     await fillAutocomplete('To courier', 'Courier', 'Courier Beta');
-    await fillAutocomplete('Client', 'Client', 'Client One');
 
     fireEvent.change(screen.getByLabelText(/reference/i), {target: {value: 'REF-123'}});
     fireEvent.change(screen.getByLabelText(/zones/i), {target: {value: '3'}});
@@ -92,7 +80,6 @@ describe('InterCourierChargeDialog', () => {
         vi.useFakeTimers({shouldAdvanceTime: true});
         vi.clearAllMocks();
         mockSearchActiveCouriers.mockResolvedValue([]);
-        mockSearchActiveClients.mockResolvedValue([]);
         mockCreateInterCourierCharge.mockResolvedValue(undefined);
     });
 
@@ -109,7 +96,7 @@ describe('InterCourierChargeDialog', () => {
             expect(screen.getByText('Charge one courier and credit another')).toBeInTheDocument();
             expect(screen.getByLabelText(/from courier/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/to courier/i)).toBeInTheDocument();
-            expect(screen.getByLabelText(/client/i)).toBeInTheDocument();
+            expect(screen.queryByLabelText(/client/i)).not.toBeInTheDocument();
             expect(screen.getByLabelText(/reference/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/zones/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/amount/i)).toBeInTheDocument();
@@ -177,24 +164,6 @@ describe('InterCourierChargeDialog', () => {
         });
     });
 
-    describe('Client Search', () => {
-        it('searches clients after typing at least 2 characters', async () => {
-            mockSearchActiveClients.mockResolvedValue(clientSuggestions);
-            renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
-
-            const input = screen.getByLabelText(/client/i);
-            fireEvent.focus(input);
-            fireEvent.change(input, {target: {value: 'Cl'}});
-
-            await act(async () => {
-                vi.advanceTimersByTime(350);
-            });
-
-            expect(mockSearchActiveClients).toHaveBeenCalledWith('Cl', expect.objectContaining({signal: expect.any(AbortSignal)}));
-            expect(await screen.findByText('Client One')).toBeInTheDocument();
-        });
-    });
-
     describe('Zones and Amount Calculation', () => {
         it('auto-calculates amount as zones * 7 when zones is changed', () => {
             renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
@@ -242,7 +211,6 @@ describe('InterCourierChargeDialog', () => {
 
             expect(screen.getByText('Choose the courier being charged.')).toBeInTheDocument();
             expect(screen.getByText('Choose the courier being credited.')).toBeInTheDocument();
-            expect(screen.getByText('Choose the client to bill.')).toBeInTheDocument();
             expect(screen.getByText('Enter a reference for this charge.')).toBeInTheDocument();
             expect(screen.getByText('Enter the number of zones.')).toBeInTheDocument();
 
@@ -264,10 +232,10 @@ describe('InterCourierChargeDialog', () => {
             expect(mockCreateInterCourierCharge).not.toHaveBeenCalled();
         });
 
-        it('caps the reference at the 20 characters the ledger stores', () => {
+        it('caps the reference at the 50 characters the ledger stores', () => {
             renderWithMantine(<InterCourierChargeDialog {...createMockProps()} />);
 
-            expect(screen.getByLabelText(/reference/i)).toHaveAttribute('maxlength', '20');
+            expect(screen.getByLabelText(/reference/i)).toHaveAttribute('maxlength', '50');
         });
     });
 
@@ -335,7 +303,6 @@ describe('InterCourierChargeDialog', () => {
                 expect(mockCreateInterCourierCharge).toHaveBeenCalledWith({
                     fromCourierId: 1,
                     toCourierId: 2,
-                    clientId: 10,
                     reference: 'REF-123',
                     amount: 21,
                 });

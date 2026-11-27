@@ -23,6 +23,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<AgentAlertSetting> AgentAlertSettings { get; set; }
 
+    public virtual DbSet<AgentAssignmentToken> AgentAssignmentTokens { get; set; }
+
     public virtual DbSet<AgentVehicle> AgentVehicles { get; set; }
 
     public virtual DbSet<AirFreightRate> AirFreightRates { get; set; }
@@ -374,6 +376,21 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ToEmail)
                 .IsRequired()
                 .HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<AgentAssignmentToken>(entity =>
+        {
+            entity.ToTable("AgentAssignmentToken");
+
+            entity.HasIndex(e => e.JobId, "IX_AgentAssignmentToken_JobId");
+
+            entity.HasIndex(e => e.TokenHash, "IX_AgentAssignmentToken_TokenHash");
+
+            entity.Property(e => e.CreatedUtc).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.TokenHash)
+                .IsRequired()
+                .HasMaxLength(32)
+                .IsFixedLength();
         });
 
         modelBuilder.Entity<AgentAlertSetting>(entity =>

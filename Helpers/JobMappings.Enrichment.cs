@@ -18,19 +18,7 @@ public static partial class JobMappings
         IDbContextFactory<DespatchContext> contextFactory,
         ITenantInfoService infoService)
     {
-        if (jobs.Count == 0)
-        {
-            return;
-        }
-
-        // Only flight info needs batch loading for child jobs that inherit from parents
-        await using var flightContext = await contextFactory.CreateDbContextAsync();
-        await BatchLoadFlightInfoAsync(flightContext, jobs);
-        
-        // Calculate distance for flight jobs (moved from expression to enrichment)
-        CalculateFlightDistances(jobs);
-
-        ApplyTimezoneToJobDates(jobs, infoService.GetTenantTimeZone());
+        await EnrichJobsAsync(jobs, contextFactory, infoService);
     }
 
     /// <summary>
@@ -39,6 +27,14 @@ public static partial class JobMappings
     /// Also calculates distance for flight jobs.
     /// </summary>
     public static async Task EnrichArchivedJobsWithCollectionsAsync(
+        List<JobViewModel> jobs,
+        IDbContextFactory<DespatchContext> contextFactory,
+        ITenantInfoService infoService)
+    {
+        await EnrichJobsAsync(jobs, contextFactory, infoService);
+    }
+
+    private static async Task EnrichJobsAsync(
         List<JobViewModel> jobs,
         IDbContextFactory<DespatchContext> contextFactory,
         ITenantInfoService infoService)

@@ -6,6 +6,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using DespatchWeb.Tests.Helpers;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.EntityClasses;
@@ -15,32 +16,10 @@ namespace DespatchWeb.Tests.EntityClasses;
 /// prebooks follow the pickup / delivery suburb rule, job-rooted lookups keep their client and courier names, the by-id
 /// visibility helpers, and job numbers stay unique across branches.
 /// </summary>
-public class DespatchContextBranchReviewFixesTests : IAsyncDisposable
+public class DespatchContextBranchReviewFixesTests : BranchScopedDbTest
 {
-    private const int Sydney = 1;
-    private const int Melbourne = 2;
-    private const int SydneySite = 43;
-    private const int MelbourneSite = 44;
-
     /// <summary>tblSetting.ParentJobCourierId on the real system: the courier split parents are parked on, with no branch.</summary>
     private const int ParentsCourier = 4;
-
-    private readonly SqliteTestDatabase _db = new();
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private static CancellationToken Ct => TestContext.Current.CancellationToken;
-
-    private DespatchContext CreateContext(ScopeContext scope)
-    {
-        var provider = Substitute.For<IScopeProvider>();
-        provider.Scope.Returns(scope);
-        return new DespatchContext(_db.Options, provider);
-    }
 
     private static ScopeContext Staff(int[]? branchIds, bool defaultBranchInScope = false, int[]? siteIds = null,
         int? parentJobCourierId = null) =>
@@ -54,46 +33,6 @@ public class DespatchContextBranchReviewFixesTests : IAsyncDisposable
 
     private static ScopeContext MelbourneOnly(int? parentCourier = ParentsCourier) =>
         Staff([Melbourne], false, [MelbourneSite], parentCourier);
-
-    private static TucClient Client(int id, int? branchId, ClientType type = ClientType.Customer) => new()
-    {
-        UcclId = id, UcclName = $"Client {id}", UcclLegalName = "L", Smsname = "S", UcclCode = $"C{id}", UcclAddress = "1 St",
-        UcclExtraAddress = "", UcclPostal = "", UcclPostCode = "0", UcclPhone = "", UcclPhone2 = "", UcclMobile = "", UcclFax = "",
-        UcclType = "", Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T",
-        ClientTypeId = (int)type, BranchId = branchId
-    };
-
-    private static TucCourier Courier(int id, int? branchId) => new()
-    {
-        UccrId = id, Code = $"R{id}", UccrName = $"Courier{id}", UccrSurname = "X", UccrEmail = $"{id}@t.com", UccrMobile = "1",
-        Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T", BranchId = branchId
-    };
-
-    private static TucSuburb Suburb(int id, int? siteId) => new()
-    {
-        UcsuId = id, UcsuName = $"Suburb {id}", UcsuArea = 0, UcsuBaseRegion = 0, Smsname = "S", PostCode = "0",
-        Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T", SiteId = siteId
-    };
-
-    private static TucJob Job(int id, int? client = null, int? courier = null, int? from = null, int? to = null,
-        int? parent = null, int? root = null) => new()
-    {
-        UcjbId = id, UcjbNumber = $"J{id}", UcjbClientId = client, UcjbCourierId = courier, UcjbFrom = from, UcjbTo = to,
-        ParentId = parent, RootParentId = root
-    };
-
-    private async Task Seed(params object[] rows)
-    {
-        await using var seed = _db.CreateContext();
-        seed.AddRange(rows);
-        await seed.SaveChangesAsync(Ct);
-    }
-
-    private async Task<int[]> JobIds(ScopeContext scope)
-    {
-        await using var context = CreateContext(scope);
-        return await context.TucJobs.OrderBy(j => j.UcjbId).Select(j => j.UcjbId).ToArrayAsync(Ct);
-    }
 
     // Sydney 1 + Melbourne 2 clients, the real placeholder courier 4 (no branch), a Sydney and a Melbourne courier.
     private Task SeedWorld() => Seed(
@@ -351,7 +290,6 @@ public class DespatchContextBranchReviewFixesTests : IAsyncDisposable
     }
 
     // ---- finding 6: job-rooted queries keep their client and courier names ----
-
 
     [Theory]
     [InlineData(typeof(TucJob), true)]

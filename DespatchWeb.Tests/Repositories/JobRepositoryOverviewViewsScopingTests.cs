@@ -18,37 +18,12 @@ namespace DespatchWeb.Tests.Repositories;
 /// DESWEB_qryDespatch) that SQLite cannot host, so — same as the pre-existing gap
 /// for the main list's own DespatchQry/BuildBaseQueryAsync — it isn't covered here.
 /// </summary>
-public class JobRepositoryOverviewViewsScopingTests : IAsyncDisposable
+public class JobRepositoryOverviewViewsScopingTests : JobRepositoryTestBase
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
-    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
-    private readonly IClearListEnvelopeService _clearListEnvelopeServiceMock = Substitute.For<IClearListEnvelopeService>();
-    private readonly ICreateJobService _createJobServiceMock = Substitute.For<ICreateJobService>();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    public JobRepositoryOverviewViewsScopingTests()
+    public JobRepositoryOverviewViewsScopingTests() : base(1)
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
-        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
-        _tenantInfoServiceMock.GetStaffId().Returns(1);
     }
-
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await _db.DisposeAsync();
-    }
-
-    private JobRepository CreateRepository() => new(
-        _contextFactoryMock,
-        _tenantInfoServiceMock,
-        _clock,
-        _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<ICourierRepository>(),
-        Substitute.For<ISuburbResolver>()
-    );
 
     [Fact]
     public async Task GetJobsForOverviewPageAsync_ScopedNonUsTenantWithNoViewsSelected_ReturnsEmpty()
@@ -56,7 +31,6 @@ public class JobRepositoryOverviewViewsScopingTests : IAsyncDisposable
         // Arrange — matches the main list's DespatchQry: a non-US tenant with no
         // despatch view selected must see nothing, not "everything", when the
         // caller (a Dispatch panel) opts into view scoping.
-        _tenantInfoServiceMock.IsUsTenant().Returns(false);
 
         await using var context = _db.CreateContext();
         context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB100", UcjbStatus = (int)JobStatus.Dispatched });
