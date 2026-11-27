@@ -270,7 +270,6 @@ export async function searchSpeedOptions(searchTerm: string, options?: RequestOp
 export interface InterCourierChargeData {
     fromCourierId: number;
     toCourierId: number;
-    clientId: number;
     reference: string;
     amount: number;
 }

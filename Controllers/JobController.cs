@@ -2373,7 +2373,6 @@ public class JobController(
 
     [HttpPost]
     [RequireScope(ScopedRecord.Courier, "viewModel.FromCourierId", "viewModel.ToCourierId")]
-    [RequireScope(ScopedRecord.Client, "viewModel.ClientId")]
     [NetworkPartnerCapability(NpCapability.InterCourierCharge)]
     public async Task<IActionResult> InterCourierCharge([FromBody] InterCourierChargeViewModel viewModel)
     {

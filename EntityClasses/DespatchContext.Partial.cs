@@ -15,6 +15,12 @@ public partial class DespatchContext
     private readonly IScopeProvider? _scopeProvider;
 
     public virtual DbSet<SignUpPageSetting> SignUpPageSettings { get; set; }
+    public virtual DbSet<DeductionType> DeductionTypes { get; set; }
+    public virtual DbSet<ExtraPaymentType> ExtraPaymentTypes { get; set; }
+    public virtual DbSet<CourierDeduction> CourierDeductions { get; set; }
+    public virtual DbSet<CourierDeductionLine> CourierDeductionLines { get; set; }
+    public virtual DbSet<CourierExtraPayment> CourierExtraPayments { get; set; }
+    public virtual DbSet<CourierExtraPaymentLine> CourierExtraPaymentLines { get; set; }
 
     private ScopeContext CurrentScope =>
         _scopeProvider?.Scope ?? ScopeContext.BackgroundContext;
@@ -331,6 +337,40 @@ public partial class DespatchContext
 
     public async Task<bool> IsOutboundPartnerJobAsync(int jobId) => await IsOutboundPartnerJobCompiled(this, jobId);
 
+    private static void ConfigureInterCourierChargeTables(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DeductionType>(e => e.ToTable("DeductionType"));
+        modelBuilder.Entity<ExtraPaymentType>(e => e.ToTable("ExtraPaymentType"));
+
+        modelBuilder.Entity<CourierDeduction>(e =>
+        {
+            e.ToTable("CourierDeduction");
+            e.Property(x => x.Reference).HasMaxLength(50);
+            e.HasMany(x => x.CourierDeductionLines).WithOne().HasForeignKey(l => l.DeductionId);
+        });
+
+        modelBuilder.Entity<CourierDeductionLine>(e =>
+        {
+            e.ToTable("CourierDeductionLine");
+            e.Property(x => x.Quantity).HasColumnType("decimal(18, 4)");
+            e.Property(x => x.UnitPrice).HasColumnType("decimal(18, 4)");
+        });
+
+        modelBuilder.Entity<CourierExtraPayment>(e =>
+        {
+            e.ToTable("CourierExtraPayment");
+            e.Property(x => x.Reference).HasMaxLength(50);
+            e.HasMany(x => x.CourierExtraPaymentLines).WithOne().HasForeignKey(l => l.CourierExtraPaymentId);
+        });
+
+        modelBuilder.Entity<CourierExtraPaymentLine>(e =>
+        {
+            e.ToTable("CourierExtraPaymentLine");
+            e.Property(x => x.Quantity).HasColumnType("decimal(18, 4)");
+            e.Property(x => x.UnitPrice).HasColumnType("decimal(18, 4)");
+        });
+    }
+
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SignUpPageSetting>(entity =>
@@ -341,6 +381,8 @@ public partial class DespatchContext
             entity.Property(e => e.MapCenterLatitude).HasColumnType("decimal(9, 6)");
             entity.Property(e => e.MapCenterLongitude).HasColumnType("decimal(9, 6)");
         });
+
+        ConfigureInterCourierChargeTables(modelBuilder);
 
         ConfigureBranches(modelBuilder);
         ConfigureBranchFamilies(modelBuilder);
