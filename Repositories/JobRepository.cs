@@ -1870,31 +1870,56 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Creates paired phantom jobs for an inter-courier charge transfer between two couriers.
-    /// The jobs are inserted directly as already-completed and hidden from dispatch — they exist
-    /// only to move money between couriers, not as real work to be performed.
+    /// Records an inter-courier charge as a <see cref="CourierDeduction"/> against the "from" courier
+    /// and a <see cref="CourierExtraPayment"/> to the "to" courier. Accounts picks both up in the
+    /// normal settlement / contractor-invoice runs. Both rows are saved in one transaction.
     /// </summary>
     /// <param name="viewModel">The inter-courier charge details including from/to courier and amount.</param>
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
     {
         try
         {
-            var staffId = _infoService.GetStaffId();
+            if (viewModel.FromCourierId == viewModel.ToCourierId)
+            {
+                throw new InvalidOperationException("From and To courier must be different.");
+            }
+
+            if (Math.Round(viewModel.Amount, 2) == 0m)
+            {
+                throw new InvalidOperationException("Amount must be non-zero.");
+            }
+
             var currentTime = _clock.TenantNow;
 
-            await using var fromJobNumberContext = await _contextFactory.CreateDbContextAsync();
-            await using var toJobNumberContext = await _contextFactory.CreateDbContextAsync();
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
-            var fromJobNumber =
-                await GenerateJobNumberAsync(staffId, (int)JobServiceType.AllServices, fromJobNumberContext);
-            var toJobNumber =
-                await GenerateJobNumberAsync(staffId, (int)JobServiceType.AllServices, toJobNumberContext);
+            var deductionTypeId = await context.DeductionTypes
+                .Where(t => t.Name == IccTypeName && t.IsActive)
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync();
+            var extraPaymentTypeId = await context.ExtraPaymentTypes
+                .Where(t => t.Name == IccTypeName && t.IsActive)
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync();
 
-            var (fromJob, toJob) = BuildIccJobPair(fromJobNumber, toJobNumber, viewModel, currentTime, staffId);
+            if (deductionTypeId is null || extraPaymentTypeId is null)
+            {
+                throw new InvalidOperationException(
+                    $"The '{IccTypeName}' deduction/extra payment type is missing or inactive.");
+            }
 
-            await using var insertContext = await _contextFactory.CreateDbContextAsync();
-            await createJobService.InsertJobRawAsync(insertContext, fromJob, CancellationToken.None);
-            await createJobService.InsertJobRawAsync(insertContext, toJob, CancellationToken.None);
+            var (deduction, extraPayment) = BuildIccAdjustments(
+                viewModel, deductionTypeId.Value, extraPaymentTypeId.Value, currentTime);
+
+            var strategy = context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction = await context.Database.BeginTransactionAsync();
+                context.CourierDeductions.Add(deduction);
+                context.CourierExtraPayments.Add(extraPayment);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            });
         }
         catch (Exception e)
         {
@@ -5677,99 +5702,67 @@ public partial class JobRepository(
             int.TryParse(zipCode, out var result) ? result : null;
     }
 
+    private const string IccTypeName = "Inter-courier charge";
+
     /// <summary>
-    /// Builds the paired phantom jobs for an inter-courier charge. The transfer moves money from
-    /// the "from" courier to the "to" courier, so the from-job carries a NEGATIVE amount (money
-    /// debited) and the to-job a POSITIVE amount (money credited). The dialog only ever submits a
-    /// non-negative amount, so the sign is decided here via <see cref="Math.Abs(decimal)"/>.
+    /// Builds the deduction (from courier) and extra payment (to courier) for an inter-courier
+    /// charge. The dialog only submits a non-negative amount, so the magnitude is taken via
+    /// <see cref="Math.Abs(decimal)"/>; direction comes from which table each row lives in.
     /// </summary>
-    internal static (TucJob fromJob, TucJob toJob) BuildIccJobPair(
-        string fromJobNumber,
-        string toJobNumber,
+    internal static (CourierDeduction deduction, CourierExtraPayment extraPayment) BuildIccAdjustments(
         InterCourierChargeViewModel viewModel,
-        DateTime currentTime,
-        int staffId)
+        int deductionTypeId,
+        int extraPaymentTypeId,
+        DateTime currentTime)
     {
         var amount = Math.Abs(viewModel.Amount);
-        var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
-
-        var fromJob = CreateIccJobEntry(
-            fromJobNumber, viewModel.ClientId, viewModel.FromCourierId, -amount,
-            viewModel.Reference, $"To # {viewModel.ToCourierId}", "ICC",
-            note, currentTime, staffId);
-
-        var toJob = CreateIccJobEntry(
-            toJobNumber, viewModel.ClientId, viewModel.ToCourierId, amount,
-            viewModel.Reference, $"From # {viewModel.FromCourierId}", string.Empty,
-            note, currentTime, staffId);
-
-        return (fromJob, toJob);
-    }
-
-    /// <summary>
-    /// Builds a phantom inter-courier-charge job — created in the Completed state and hidden
-    /// from dispatch. Mirrors the pre-2025-09-24 field set; the unified CreateJobService path
-    /// is unsuitable here because it produces live dispatch-board jobs and runs client-default
-    /// validation that the ICC payload doesn't satisfy.
-    /// </summary>
-    internal static TucJob CreateIccJobEntry(
-        string jobNumber,
-        int clientId,
-        int courierId,
-        decimal amount,
-        string reference,
-        string clientRefB,
-        string ourRef,
-        string note,
-        DateTime currentTime,
-        int staffId)
-    {
-        return new TucJob
+        var reference = (viewModel.Reference ?? string.Empty).Trim();
+        if (reference.Length > 50)
         {
-            UcjbNumber = jobNumber,
-            UcjbDate = currentTime,
-            UcjbTime = currentTime,
-            UcjbType = (int)JobServiceType.AllServices,
-            UcjbClientId = clientId,
-            UcjbContact = $"Courier {courierId}",
-            UcjbChargeType = 3,
-            UcjbAmount = amount,
-            UcjbSpeed = 1,
-            PickupAddressLine1 = note,
-            DeliveryAddressLine1 = "ToSP",
-            UcjbSize = 1,
-            UcjbQty = 1,
-            UcjbCbd = false,
-            UcjbKm = 0,
-            UcjbFlightDetails = "FD",
-            UcjbWeight = 1,
-            UcjbCourierId = courierId,
-            UcjbClientRefa = (reference ?? string.Empty)[..Math.Min((reference ?? string.Empty).Length, 20)],
-            UcjbClientRefb = (clientRefB ?? string.Empty)[..Math.Min((clientRefB ?? string.Empty).Length, 15)],
-            UcjbOurRef = (ourRef ?? string.Empty)[..Math.Min((ourRef ?? string.Empty).Length, 20)],
-            UcjbOpId = staffId,
-            UcjbVan = false,
-            Truck = false,
-            UcjbReturn = false,
-            UcjbVoid = false,
-            UcjbAttention = false,
-            UcjbPickUpFrom = 0,
-            UcjbPaged = true,
-            UcjbClientCode = "ZZZ!!",
-            UcjbRefJobId = 0,
-            UcjbNotes = string.Empty,
-            UcjbStatus = (int)JobStatus.Completed,
-            UcjbComplTime = currentTime,
-            UcjbPodname = $"Courier {courierId}",
-            UcjbJobDone = true,
-            ProofOfDelivery = 0,
-            SourceId = (int)JobSource.DespatchWeb,
-            Reprice = false,
-            FuelSurchargeAmount = 0,
-            DeliverToPrivateBusiness = 0,
-            UcjbDispTime = currentTime,
-            DisplayInDespatch = false
+            reference = reference[..50];
+        }
+
+        var storedReference = reference.Length == 0 ? null : reference;
+
+        var deduction = new CourierDeduction
+        {
+            Created = currentTime,
+            CourierId = viewModel.FromCourierId,
+            Reference = storedReference,
+            Date = currentTime.Date,
+            CourierDeductionLines =
+            [
+                new CourierDeductionLine
+                {
+                    Created = currentTime,
+                    DeductionTypeId = deductionTypeId,
+                    Description = $"Inter-courier charge to courier # {viewModel.ToCourierId}",
+                    Quantity = 1,
+                    UnitPrice = amount
+                }
+            ]
         };
+
+        var extraPayment = new CourierExtraPayment
+        {
+            Created = currentTime,
+            CourierId = viewModel.ToCourierId,
+            Reference = storedReference,
+            Date = currentTime.Date,
+            CourierExtraPaymentLines =
+            [
+                new CourierExtraPaymentLine
+                {
+                    Created = currentTime,
+                    ExtraPaymentTypeId = extraPaymentTypeId,
+                    Description = $"Inter-courier charge from courier # {viewModel.FromCourierId}",
+                    Quantity = 1,
+                    UnitPrice = amount
+                }
+            ]
+        };
+
+        return (deduction, extraPayment);
     }
 
     /// <summary>

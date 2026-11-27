@@ -12,7 +12,6 @@ import {
     sectionPaperProps,
 } from '../shared/mantine';
 import {searchActiveCouriers} from '../../../api/courierApi';
-import {searchActiveClients} from '../../../api/jobApi';
 import {createInterCourierCharge} from '../../../api/dispatchExecutorApi';
 import {formatCurrency} from '../../../utils/currencyUtils';
 import type {Suggestion} from '../../../types/job';
@@ -21,8 +20,8 @@ import type {ShowToastFn} from '../../../services/toastService';
 /** What one zone is worth. The amount defaults to zones x this. */
 const ZONE_RATE = 7;
 
-/** `tucJob.UcjbClientRefa` is nvarchar(20); the backend truncates silently past it. */
-const REFERENCE_MAX = 20;
+/** `CourierDeduction.Reference` / `CourierExtraPayment.Reference` are nvarchar(50). */
+const REFERENCE_MAX = 50;
 
 /** The true minus sign — reads as "minus", and lines up with the plus. */
 const MINUS = '−';
@@ -75,7 +74,6 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
 }) => {
     const [fromCourier, setFromCourier] = useState<Suggestion | null>(null);
     const [toCourier, setToCourier] = useState<Suggestion | null>(null);
-    const [client, setClient] = useState<Suggestion | null>(null);
     const [reference, setReference] = useState('');
     const [zones, setZones] = useState<string>('');
     const [amount, setAmount] = useState<string>('');
@@ -88,7 +86,6 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
         if (open) {
             setFromCourier(null);
             setToCourier(null);
-            setClient(null);
             setReference('');
             setZones('');
             setAmount('');
@@ -126,7 +123,6 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
     const toCourierError = sameCourier
         ? "Pick a different courier. A charge can't go to and from the same one."
         : submitted && !toCourier ? 'Choose the courier being credited.' : undefined;
-    const clientError = submitted && !client ? 'Choose the client to bill.' : undefined;
     const referenceError = submitted && reference.trim() === ''
         ? 'Enter a reference for this charge.' : undefined;
     const zonesError = submitted && zones === '' ? 'Enter the number of zones.'
@@ -136,7 +132,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
         : submitted && parsedAmount < 0 ? 'Amount cannot be negative.'
             : undefined;
 
-    const isFormValid = Boolean(fromCourier && toCourier && client)
+    const isFormValid = Boolean(fromCourier && toCourier)
         && !sameCourier
         && reference.trim() !== '' && zones !== '' && amount !== ''
         && Number.isFinite(parsedZones) && Number.isFinite(parsedAmount)
@@ -171,7 +167,6 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
             await createInterCourierCharge({
                 fromCourierId: fromCourier!.id,
                 toCourierId: toCourier!.id,
-                clientId: client!.id,
                 reference: reference.trim(),
                 amount: parseFloat(amount),
             });
@@ -184,7 +179,7 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
         } finally {
             setIsSubmitting(false);
         }
-    }, [isFormValid, fromCourier, toCourier, client, reference, amount, showToast, onClose]);
+    }, [isFormValid, fromCourier, toCourier, reference, amount, showToast, onClose]);
 
     const handleClose = useCallback(() => {
         if (!isSubmitting) onClose();
@@ -242,17 +237,6 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                         <Text {...sectionLabelProps}>Charge</Text>
                         <Paper {...sectionPaperProps}>
                             <Stack gap="md">
-                                <SearchSelect<Suggestion>
-                                    label="Client"
-                                    placeholder="Search clients…"
-                                    value={client}
-                                    onChange={setClient}
-                                    search={searchActiveClients}
-                                    getOptionKey={suggestionKey}
-                                    getOptionLabel={suggestionLabel}
-                                    error={clientError}
-                                    withAsterisk
-                                />
                                 <TextInput
                                     label="Reference"
                                     placeholder="Enter reference"
