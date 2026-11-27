@@ -261,7 +261,7 @@ describe('dispatchExecutorApi', () => {
     describe('createInterCourierCharge', () => {
         it('should call apiClient.post with charge data', async () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);
-            const data = {fromCourierId: 10, toCourierId: 20, clientId: 30, reference: 'REF-001', amount: 50};
+            const data = {fromCourierId: 10, toCourierId: 20, reference: 'REF-001', amount: 50};
 
             await createInterCourierCharge(data);
 
